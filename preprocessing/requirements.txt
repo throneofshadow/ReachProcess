@@ -1,0 +1,8 @@
+numpy
+pandas
+scipy
+sphinx
+sphinx-gallery
+readTrodesExtractedDataFile3
+sphinx_rtd_theme
+autodoc
