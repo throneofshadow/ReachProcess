@@ -10,6 +10,13 @@ import glob
 
 def findFilesInFolder(fullpath):
     """  Recursive function to find all files of an extension type in a folder (and optionally in all subfolders too)
+     Parameters
+    ----------
+    fullpath: str, path to directory function searches over
+
+    Returns
+    -------
+    pl: list, paths of videos that need to be split
     """
     ps = []
     pl = []
@@ -24,7 +31,6 @@ def findFilesInFolder(fullpath):
             pass
         else:
             pl.append(files)
-    pdb.set_trace()
     return pl
 
 
@@ -45,21 +51,38 @@ def conver2bgr(frame):
     return frame
 
 
-def enhanceImage(frame):
-    cols, rows, ch = frame.shape
-    brightness = np.sum(frame) / (ch * 255 * cols * rows)
+def enhanceImage(frame_in):
+    """ Function to enhance a given image's resolution using opencv.
+    Parameters
+    ----------
+    frame_in: array, image to be  enhanced
+    Returns
+    -------
+    frame: array, enhanced image array
+    """
+    cols, rows, ch = frame_in.shape
+    brightness = np.sum(frame_in) / (ch * 255 * cols * rows)
     minimum_brightness = 0.2
-    frame = cv2.convertScaleAbs(frame, alpha=1, beta=255 * (minimum_brightness - brightness))
+    frame = cv2.convertScaleAbs(frame_in, alpha=1, beta=255 * (minimum_brightness - brightness))
     return frame
 
 
-def mainrun_split(input):
-    intput_filename = input[0]
+def mainrun_split(input_video_files):
+    """ Function to split experimental videos for analysis. Takes in a single data path, splits and saved
+        individual camera angles to their own separate videos.
+        Parameters
+        ----------
+        input_video_files: str, path to individual video file to be split
+
+        Returns
+        --------
+        """
+    input_filename = input_video_files[0]
     no_of_cam = 3
     crf = '2'
     pix_Format = 'yuv420p'
-    cap = cv2.VideoCapture(str(intput_filename))
-    print('opening filename' + str(intput_filename))
+    cap = cv2.VideoCapture(str(input_filename))
+    print('opening filename' + str(input_filename))
     if cap.isOpened():
         print("Error opening video file")
         pdb.set_trace()
@@ -71,7 +94,7 @@ def mainrun_split(input):
     print('Start converting...      ', end='', flush=True)
     writers = []
     for i in range(no_of_cam):
-        output_filename = intput_filename.split('.')[0] + '_cam' + str(i + 1) + '.mp4'
+        output_filename = input_filename.split('.')[0] + '_cam' + str(i + 1) + '.mp4'
         writers.append(WriteGear(output_filename=output_filename, compression_mode=True,
                                  logging=False, **output_params))
     while cap.isOpened():
