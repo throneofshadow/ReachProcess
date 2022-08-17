@@ -11,7 +11,7 @@ setup(
     author_email='bnelson@lbl.gov',
     license='BSD-3-Clause-LBNL',
     packages=['ReachSample'],
-    install_requires=['cv2', 'vidgear', 'pdb','numpy','glob','collections','os','glob', 'tqdm', 'pickle', 'scipy'],
+    install_requires=['cv2', 'vidgear', 'pdb', 'numpy', 'glob', 'collections', 'os', 'glob', 'tqdm', 'pickle', 'scipy'],
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Science/Research',
@@ -21,4 +21,5 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
+
 )

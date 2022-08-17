@@ -1,12 +1,12 @@
 cv2
-vidgear
+vidgear==0.2.6
 pdb
-numpy
+numpy==1.23.2
 glob
 collections
 os
 glob
 tqdm
 pickle
-scipy
+scipy==1.9.0
 
