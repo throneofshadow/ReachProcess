@@ -5,9 +5,9 @@ import os
 import glob
 import tqdm
 import pickle
-from reachprocess.reach_predict.data_extraction import name_scrape, get_name
+from reachprocess.reachprocess_scripts.data_extraction import name_scrape, get_name
 import pandas as pd
-from reachprocess.reach_predict.Reconstruction import get_kinematic_data
+from reachprocess.reachprocess_scripts.Reconstruction import get_kinematic_data
 
 
 def return_block_kinematic_df(f):

@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from reachprocess.reach_predict.Reconstruction import get_kinematic_data
+from reachprocess.reachprocess_scripts.Reconstruction import get_kinematic_data
 from reachprocess.utils.config_parser import import_config_data
 from reachprocess.utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
 from reachprocess.utils.trial_parser import match_times, get_successful_trials
