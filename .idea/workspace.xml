@@ -4,32 +4,50 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="116e78b5-094d-402c-a002-238d0aff4049" name="Changes" comment="Refactor code-base, add necessary directory structure, edit video split functionality.">
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    <list default="true" id="116e78b5-094d-402c-a002-238d0aff4049" name="Changes" comment="Update req.txt for version control.">
+      <change afterPath="$PROJECT_DIR$/reachprocess/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/reachprocess/reachprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ReachPredict3D/ReachPredict.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/ReachPredict.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ReachPredict3D/reconstruct_predictions.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/reconstruct_predictions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/LICENSE.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/data_extraction.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/data_extraction.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/reconstruction_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/reconstruction_analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/trial_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/config_data/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/config_data/config_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/config_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/controller_data/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/controller_data/controller_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/controller_data_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/parse_calibration.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/parse_calibration.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/setup.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/calibration_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/calibration_data_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/experiment_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/experiment_data_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/readTrodesExtractedDataFile3.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/readTrodesExtractedDataFile3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/DLC/Reconstruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/Reconstruction.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/DLC/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/ReachPredict.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/Reconstruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/Reconstruction.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/data_extraction.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/data_extraction.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/predictions.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/predictions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/reconstruct_predictions.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/reconstruct_predictions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/reconstruction_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/reconstruction_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/reach_predict/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/calibration_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/calibration_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/config_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/config_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/controller_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/controller_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/experiment_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/experiment_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/parse_calibration.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/parse_calibration.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/readTrodesExtractedDataFile3.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/readTrodesExtractedDataFile3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/trial_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/trial_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/utils/video_split_batching.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/video_split_batching.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/LICENSE.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/Scripts/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/Scripts/data_extraction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/Scripts/reconstruction_analysis.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/Scripts/utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/reachprocess/utils/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/config_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/config_data/config_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/controller_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/controller_data/controller_data_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/old_notebooks/Video.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/old_notebooks/circle_detect.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/parse_calibration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/preprocessing.rst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/setup.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/trodes_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/trodes_data/calibration_data_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/trodes_data/experiment_data_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/trodes_data/readTrodesExtractedDataFile3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/video_data/DLC/Reconstruction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/video_data/DLC/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/preprocessing/video_data/__init__.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,8 +57,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="Freeze Requirements File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -64,9 +82,10 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D\reach_predict" />
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D" />
       <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D\Scripts" />
       <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D\utils" />
-      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D" />
       <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\notebooks" />
     </key>
   </component>
@@ -100,7 +119,28 @@
       <option name="project" value="LOCAL" />
       <updated>1660769435091</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Refactor code-base, add necessary directory structure, rename inputs.">
+      <created>1660770972487</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1660770972487</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Add setup.py">
+      <created>1660771295704</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1660771295704</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Update req.txt for version control.">
+      <created>1660771440852</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1660771440852</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -118,6 +158,9 @@
     <MESSAGE value="Initial refactor from ReachMaster." />
     <MESSAGE value="Initial refactor." />
     <MESSAGE value="Refactor code-base, add necessary directory structure, edit video split functionality." />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor code-base, add necessary directory structure, edit video split functionality." />
+    <MESSAGE value="Refactor code-base, add necessary directory structure, rename inputs." />
+    <MESSAGE value="Add setup.py" />
+    <MESSAGE value="Update req.txt for version control." />
+    <option name="LAST_COMMIT_MESSAGE" value="Update req.txt for version control." />
   </component>
 </project>
