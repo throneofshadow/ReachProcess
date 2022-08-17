@@ -1,0 +1,12 @@
+cv2
+vidgear
+pdb
+numpy
+glob
+collections
+os
+glob
+tqdm
+pickle
+scipy
+

@@ -1,4 +1,5 @@
-from trodes_data import calibration_data_parser as cdp
+from ReachPredict3D.utils import calibration_data_parser as cdp
+
 #To do: callable from CLI
 
 data_dir = '/home/kallanved/Desktop'

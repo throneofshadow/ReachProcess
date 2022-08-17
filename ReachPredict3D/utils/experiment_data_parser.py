@@ -4,8 +4,7 @@ collected during experiments.
 """
 
 import numpy as np
-import pdb
-from . import readTrodesExtractedDataFile3 as read_trodes
+from ReachPredict3D.utils import readTrodesExtractedDataFile3 as read_trodes
 
 
 def get_trodes_files(data_dir, trodes_name, win_dir=False):  # pass in data directory, name of rec file

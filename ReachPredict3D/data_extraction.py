@@ -9,12 +9,12 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from software.preprocessing.video_data.DLC.Reconstruction import get_kinematic_data
-from software.preprocessing.config_data.config_parser import import_config_data
-from software.preprocessing.controller_data.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
-from software.preprocessing.reaching_without_borders.rwb import match_times, get_successful_trials
-from software.preprocessing.trodes_data.experiment_data_parser import import_trodes_data
-from software.preprocessing.trodes_data.calibration_data_parser import get_traces_frame
+from ReachPredict3D.Reconstruction import get_kinematic_data
+from ReachPredict3D.utils.config_parser import import_config_data
+from ReachPredict3D.utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
+from ReachPredict3D.utils.trial_parser import match_times, get_successful_trials
+from ReachPredict3D.utils.experiment_data_parser import import_trodes_data
+from ReachPredict3D.utils.calibration_data_parser import get_traces_frame
 
 
 def load_files(trodes_dir, exp_name, controller_path, config_dir, rat, session,video_path, analysis=False,

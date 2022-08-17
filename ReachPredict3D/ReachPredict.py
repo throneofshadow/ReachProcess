@@ -3,8 +3,8 @@
  and utilize various pre-trained classification algorithms to predict class labels."""
 
 
-import pandas as pd
-import glob, os
+import glob
+import os
 
 
 class ReachPredict:

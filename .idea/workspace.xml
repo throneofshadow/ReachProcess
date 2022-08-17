@@ -1,11 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="116e78b5-094d-402c-a002-238d0aff4049" name="Changes" comment="" />
+    <list default="true" id="116e78b5-094d-402c-a002-238d0aff4049" name="Changes" comment="Refactor code-base, add necessary directory structure, edit video split functionality.">
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/ReachPredict.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/ReachPredict.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ReachPredict3D/reconstruct_predictions.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/reconstruct_predictions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/LICENSE.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/data_extraction.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/data_extraction.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/reconstruction_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/reconstruction_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/Scripts/utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/trial_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/config_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/config_data/config_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/config_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/controller_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/controller_data/controller_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/controller_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/parse_calibration.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/parse_calibration.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/setup.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/calibration_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/calibration_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/experiment_data_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/experiment_data_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/trodes_data/readTrodesExtractedDataFile3.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/utils/readTrodesExtractedDataFile3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/DLC/Reconstruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/ReachPredict3D/Scripts/Reconstruction.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/DLC/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/preprocessing/video_data/__init__.py" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+        <option value="Freeze Requirements File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -21,9 +58,18 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true"
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/bassp/PycharmProjects/ReachProcess"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D\Scripts" />
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D\utils" />
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\ReachPredict3D" />
+      <recent name="C:\Users\bassp\PycharmProjects\ReachProcess\notebooks" />
+    </key>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -33,6 +79,45 @@
       <option name="presentableId" value="Default" />
       <updated>1658184742887</updated>
     </task>
+    <task id="LOCAL-00001" summary="Initial refactor from ReachMaster.">
+      <created>1658187624902</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1658187624902</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Initial refactor.">
+      <created>1658785317222</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1658785317222</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Refactor code-base, add necessary directory structure, edit video split functionality.">
+      <created>1660769435091</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1660769435091</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial refactor from ReachMaster." />
+    <MESSAGE value="Initial refactor." />
+    <MESSAGE value="Refactor code-base, add necessary directory structure, edit video split functionality." />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor code-base, add necessary directory structure, edit video split functionality." />
   </component>
 </project>

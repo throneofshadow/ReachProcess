@@ -5,9 +5,9 @@ import os
 import glob
 import tqdm
 import pickle
-from software.preprocessing.Scripts.data_extraction import name_scrape, get_name
+from ReachPredict3D.data_extraction import name_scrape, get_name
 import pandas as pd
-from software.preprocessing.video_data.DLC.Reconstruction import get_kinematic_data
+from ReachPredict3D.Reconstruction import get_kinematic_data
 
 
 def return_block_kinematic_df(f):
