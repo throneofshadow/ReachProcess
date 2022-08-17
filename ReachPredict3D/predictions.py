@@ -10,32 +10,29 @@ import tensorflow as tf
 import glob
 
 
-def find_cam_files(root_dir):
-    """Function to find single camera .mp4 files for DeepLabCut to run a given predictive network on!
-
-    Attributes
-    --------------
+def find_cam_files_for_DLC_predictions(root_dir):
+    """
+    Function to find cam files for DeepLabCut to perform analysis on
+    Parameters
+    ----------
     root_dir : path directory
-
     Returns
-    ----------------
-    cam1_array: list, paths to experimental video files from camera1
-
-    cam2_array: list, paths to experimental video files from camera2
-
-    cam3_array: list, paths to experimental video files from camera3
-
+    -------
+       cam1_array: list of files, str
+       cam2_array: list of files, str
+       cam3_array: list of files, str
     """
     cam1_array = []
     cam2_array = []
     cam3_array = []
     for file in glob.glob(root_dir, recursive=True):
-        if "shuffle2" in file:
-            print("File has been analyzed already!" + file)
+        if "shuffle" in file:
+            print("Video " + str(file) + "has been analyzed by DeepLabCut already!  Try adjusting the shuffle and network"
+                                         "name parameter. ")
             sig_flag = 0
         else:
             sig_flag = 1
-        if "cam1" in file: #check and make sure that the files have been split
+        if "cam1" in file:  # check and make sure that the files have been split
             if sig_flag == 1:
                 cam1_array.append(file)
         elif "cam2" in file:
