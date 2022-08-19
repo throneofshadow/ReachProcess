@@ -7,11 +7,11 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from reachprocess.utils.dlt_3d_reconstruction_utils import get_3d_coordinates
-from reachprocess.utils.config_parser import import_config_data, get_config_data
-from reachprocess.utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
-from reachprocess.utils.trial_parser import match_times, get_successful_trials, trial_mask
-from reachprocess.utils.experiment_data_parser import import_trodes_data
+from reachprocess.utils.process_utils.dlt_3d_reconstruction_utils import get_3d_coordinates
+from reachprocess.utils.experiment_utils.config_parser import import_config_data, get_config_data
+from reachprocess.utils.experiment_utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
+from reachprocess.utils.experiment_utils.trial_parser import match_times, get_successful_trials, trial_mask
+from reachprocess.utils.experiment_utils.experiment_data_parser import import_trodes_data
 
 
 def load_files(trodes_dir, exp_name, controller_path, config_dir, rat, session, analysis=False,

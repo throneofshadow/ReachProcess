@@ -1,4 +1,4 @@
-from reachprocess.utils import calibration_data_parser as cdp
+from reachprocess.utils.experiment_utils import calibration_data_parser as cdp
 
 #To do: callable from CLI
 

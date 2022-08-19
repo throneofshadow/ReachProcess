@@ -4,8 +4,8 @@
 import os
 from tqdm import tqdm
 import pandas as pd
-import reachprocess.utils.video_split_batching as RP_V
-import reachprocess.utils.data_extraction_utils as extract_predictions
+import reachprocess.utils.process_utils.video_split_batching as RP_V
+import reachprocess.utils.process_utils.data_extraction_utils as extract_predictions
 import deeplabcut
 import pickle
 

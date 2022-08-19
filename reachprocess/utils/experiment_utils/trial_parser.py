@@ -1,7 +1,7 @@
 """ Set of utilities to notate trial times from micro-controller data. """
 import numpy as np
-from reachprocess.utils.controller_data_parser import get_reach_indices, get_reach_times
-from reachprocess.utils.experiment_data_parser import get_exposure_times
+from reachprocess.utils.experiment_utils.controller_data_parser import get_reach_indices, get_reach_times
+from reachprocess.utils.experiment_utils.experiment_data_parser import get_exposure_times
 
 
 def match_times(controller_data, experiment_data):

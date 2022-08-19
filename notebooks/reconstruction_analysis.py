@@ -1,6 +1,6 @@
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-from reachprocess.utils.dlt_3d_reconstruction_utils import dlt_reconstruct
+from reachprocess.utils.process_utils.dlt_3d_reconstruction_utils import dlt_reconstruct
 from scipy.ndimage import gaussian_filter
 import shutil, os
 from errno import EEXIST, ENOENT
