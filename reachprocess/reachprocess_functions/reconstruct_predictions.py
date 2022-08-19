@@ -5,9 +5,9 @@ import os
 import glob
 import tqdm
 import pickle
-from reachprocess.reachprocess_scripts.data_extraction import name_scrape, get_name
+from reachprocess.reachprocess_functions.data_extraction import get_trial_metadata_no_date, get_date_from_file
 import pandas as pd
-from reachprocess.reachprocess_scripts.Reconstruction import get_kinematic_data
+from reachprocess.reachprocess_functions.DLC_reconstruction import get_3d_coordinates
 
 
 def return_block_kinematic_df(f):
@@ -23,11 +23,11 @@ def return_block_kinematic_df(f):
     """
     file_ = f[0]
     dlt_path = f[1]
-    controller_path, config_path, exp_name, name, ix, trodes_name, video_path = name_scrape(file_)
+    controller_path, config_path, exp_name, name, ix, trodes_name, video_path = get_trial_metadata_no_date(file_)
     # dim, reward_dur, x_pos, y_pos, z_pos, x0, y0, z0, r, t1, t2 = get_config_data(str(config_path))
-    date = get_name(file_)
+    date = get_date_from_file(file_)
     print(exp_name + ' is being added..')
-    kd = get_kinematic_data(video_path, dlt_path, 'resnet', name, date, ix, 0)
+    kd = get_3d_coordinates(video_path, dlt_path, 'resnet', name, date, ix, 0)
     return kd
 
 

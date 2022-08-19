@@ -58,3 +58,29 @@ def get_successful_trials(controller_data, matched_time, experiment_data):
     else:
         success_rate.append(-1)
     return success_rate
+
+
+def trial_mask(matched_times, r_i_start, r_i_stop, s_t):
+    """Function to
+
+    Parameters
+    ----------
+    matched_times : array of normalized timestamps across entire dataset
+    r_i_start : indices of reaching experiments, behavior detected
+    r_i_stop : indices of reaching experiments, trial end
+    s_t : success or fail indices eg [1, 4, 7..]
+
+    Returns
+    -------
+    new_times : array of experiment times
+    """
+    lenx = int(matched_times.shape[0])
+    new_times = np.zeros((lenx))
+    for i, j in zip(range(0, len(r_i_start) - 1), range(0, len(r_i_stop) - 1)):
+        ix = int(r_i_start[i])
+        jx = int(r_i_stop[i])
+        if any(i == s for s in s_t):
+            new_times[ix:jx] = 2
+        else:
+            new_times[ix:jx] = 1
+    return new_times

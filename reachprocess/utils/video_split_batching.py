@@ -111,3 +111,36 @@ def mainrun_split(input_video_files):
     cap.release()
     cv2.destroyAllWindows()
     print('[DONE]')
+
+
+def find_cam_files(root_dir):
+    """
+    Function to find cam files for 3-D calibration
+    Parameters
+    ----------
+    root_dir : path directory
+    Returns
+    -------
+       cam arrays
+    """
+    cam1_array = []
+    cam2_array = []
+    cam3_array = []
+    sig_flag = True
+    for file in glob.glob(root_dir, recursive=True):
+        path = file.rsplit('/', 1)[0] + '/'
+        if "shuffle2" in file:
+            print(file + "has been analyzed already! ")
+            sig_flag = False
+        else:
+            sig_flag = True
+        if "cam1" in file:  # check and make sure that the files have been split
+            if sig_flag:
+                cam1_array.append(file)
+        elif "cam2" in file:
+            if sig_flag:
+                cam2_array.append(file)
+        elif "cam3" in file:
+            if sig_flag:
+                cam3_array.append(file)
+    return cam1_array, cam2_array, cam3_array
