@@ -5,11 +5,9 @@ import os
 from tqdm import tqdm
 import pandas as pd
 import reachprocess.utils.video_split_batching as RP_V
-import reachprocess.reachprocess_functions.data_extraction as extract_predictions
+import reachprocess.utils.data_extraction_utils as extract_predictions
 import deeplabcut
 import pickle
-
-from reachprocess.utils.video_split_batching import find_cam_files
 
 
 class ReachProcess:
@@ -66,7 +64,7 @@ class ReachProcess:
     def extract_predictions_3d(self, save_all = True):
         """ Function to iterate over DLC predictions, transform them using a given set of DLT co-effecients,
             and save into a dataframe. """
-        self.individual_session_predictions, self.individual_rmse = extract_predictions.get_kinematics(self.data_path, self.DLT_path)
+        self.individual_session_predictions, self.individual_rmse = extract_predictions.get_3d_predictions(self.data_path, self.DLT_path)
         if save_all:
             self.total_predictions.append(self.individual_session_predictions)
             self.total_rmse.append(self.individual_rmse)

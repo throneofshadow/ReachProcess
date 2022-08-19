@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from reachprocess.reachprocess_functions.DLC_reconstruction import get_3d_coordinates
+from reachprocess.utils.dlt_3d_reconstruction_utils import get_3d_coordinates
 from reachprocess.utils.config_parser import import_config_data, get_config_data
 from reachprocess.utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
 from reachprocess.utils.trial_parser import match_times, get_successful_trials, trial_mask
@@ -190,7 +190,7 @@ def get_trial_metadata(file):
     return controller_path, config_path, exp_name, name, ix, n, video_path, date
 
 
-def get_kinematics(cns, dlt_path, rat_name):
+def get_3d_predictions(cns, dlt_path, rat_name):
     """Function to iterate over a data directory and extract 3-D positional data from CatScan or other data directory.
 
     Parameters

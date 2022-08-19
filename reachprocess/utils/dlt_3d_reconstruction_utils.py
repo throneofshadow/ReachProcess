@@ -92,7 +92,7 @@ def dlt_reconstruct(c, camPts, weights):
     return xyz, rmse
 
 
-def reconstruct_3d(dlt_coeffs_file, dlc_files):
+def reconstruct_3d(dlt_coeffs_file, dlc_files, weighted=True):
     """Perform 3-D reconstruction using DLT co-effecients and extracted multi-camera predictions
     Parameters
     ----------
@@ -130,7 +130,10 @@ def reconstruct_3d(dlt_coeffs_file, dlc_files):
             weights[:, col + 1] = np.loadtxt(dlc_files[cam], dtype=float, delimiter=',', skiprows=3,
                                              usecols=(csv_index + 2))
         # combine
-        xyz, rmse = dlt_reconstruct(dlt_coefs, cam_data, weights)
+        if weighted:
+            xyz, rmse = dlt_reconstruct(dlt_coefs, cam_data, weights)
+        else:
+            xyz, rmse = dlt_reconstruct(dlt_coefs, cam_data)
         xyz_k = np.append(xyz, np.mean(weights, axis=1)[:, np.newaxis], axis=1)
         xyz_all[:, :, k] = xyz_k
         rmse_all[:, k] = rmse
