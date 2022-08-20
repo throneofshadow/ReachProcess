@@ -8,13 +8,17 @@ import reachprocess.utils.process_utils.video_split_batching as RP_V
 import reachprocess.utils.process_utils.data_extraction_utils as extract_predictions
 import deeplabcut
 import pickle
+import reachprocess.kinematics.ReachLoader as ReachLoader
 
 
 class ReachProcess:
     """ Class to split experimental videos, use a pre-trained DLC network to predict positional keypoints, and compile
         the predicted kinematics into use-able 3-D predictions. """
 
-    def __init__(self, input_data_path, split=True, predict=True, analyze=True, visualize=True, make_kinematics = True,
+    # TODO - add count for # sessions being processed in split, check for rat,date,session
+    # TODO - check each step for previous process savefile
+    # TODO - delete from memory each step ie close process.
+    def __init__(self, input_data_path, split=True, predict=True, transform=True, visualize=True, make_kinematics=True,
                  save_all=True, DLC_path='', DLT_path=''):
         """ ReachProcess! Initialize with a data path, set your desired output flags, and run!
             Parameters
@@ -22,7 +26,7 @@ class ReachProcess:
             input_data_path: str, path to data
             split: bool, flag for splitting videos
             predict: bool, flag for predicting videos
-            analyze: bool, flag for compiling 3-D predictions
+            transform: bool, flag for compiling 3-D predictions
             make_kinematics : bool, flag for compiling kinematic data
             visualize : bool, flag for visualizing 3-D predictions
             DLC_path: str, path to DLC network
@@ -38,13 +42,13 @@ class ReachProcess:
             self.DLC_path = DLC_path
             self.cam1_files, self.cam2_files, self.cam3_files = RP_V.find_cam_files(self.data_path)
             self.predict_with_deeplabcut()
-        if analyze:
+        if transform:
             self.DLT_path = DLT_path
             self.extract_predictions_3d(save_all=save_all)
             if save_all:
                 self.save_all_predictions()
         if make_kinematics:
-            self.create_kinematics_from_predictions()
+            self.loader = ReachLoader.ReachCompute(self.rat, self.date, self.session, self.robot_data, path_to_video, predictions_data, rmse_data)
         if visualize:
             self.visualize_data()
 
@@ -61,10 +65,11 @@ class ReachProcess:
 
         return
 
-    def extract_predictions_3d(self, save_all = True):
+    def extract_predictions_3d(self, save_all=True):
         """ Function to iterate over DLC predictions, transform them using a given set of DLT co-effecients,
             and save into a dataframe. """
-        self.individual_session_predictions, self.individual_rmse = extract_predictions.get_3d_predictions(self.data_path, self.DLT_path)
+        self.individual_session_predictions, self.individual_rmse = extract_predictions.get_3d_predictions(
+            self.data_path, self.DLT_path)
         if save_all:
             self.total_predictions.append(self.individual_session_predictions)
             self.total_rmse.append(self.individual_rmse)
@@ -80,7 +85,7 @@ class ReachProcess:
         total_p = pd.DataFrame(self.total_predictions)
         total_p.to_csv(save_path_csv)
 
-    def run_analysis_videos_deeplabcut(self, cam_video_paths, shuffle=2, train_index = 9,  filter=False, label_video = True):
+    def run_analysis_videos_deeplabcut(self, cam_video_paths, shuffle=2, train_index=9, filter=False, label_video=True):
         print("Starting to extract files..")
         # initialize deeplabcut
         deeplabcut.analyze_videos(self.DLC_path, cam_video_paths, videotype='.mp4', shuffle=shuffle,
