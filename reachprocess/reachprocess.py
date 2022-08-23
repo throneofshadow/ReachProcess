@@ -48,7 +48,8 @@ class ReachProcess:
             if save_all:
                 self.save_all_predictions()
         if make_kinematics:
-            self.loader = ReachLoader.ReachCompute(self.rat, self.date, self.session, self.robot_data, path_to_video, predictions_data, rmse_data)
+            print('')
+            # self.loader = ReachLoader.ReachCompute(self.rat, self.date, self.session, self.robot_data, path_to_video, predictions_data, rmse_data)
         if visualize:
             self.visualize_data()
 
