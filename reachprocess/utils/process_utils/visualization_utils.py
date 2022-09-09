@@ -58,27 +58,37 @@ def create_directory_for_session(root_dir, rat, date, session, win_dir=True):
 
 def preprocessing_boxplot(save_path, rmse_dataframe, prob_data):
     """ Function to create standardized boxplots for keypoint variables within ecosystem. """
-    rmse_dataframe.boxplot(showfliers=False)
+    rmse_dataframe.boxplot(fontsize=3, showfliers=False)
+    plt.ylabel('RMSE (px)')
     plt.savefig(save_path + '\\boxplot\\rmse_values_boxplot.png', dpi=1400)
-    prob_data.boxplot(showfliers=False)
+    plt.close()
+    prob_data.boxplot(fontsize=3, showfliers=False)
+    plt.ylabel('DLC Confidence (p-value)')
     plt.savefig(save_path + '\\boxplot\\prob_values_boxplot.png', dpi=1400)
+    plt.close()
 
 
 def preprocessing_colormaps(save_path, rmse_dataframe, prob_data, sensor_data):
     """ Function to plot 2-D colordepth map for data types used in evaluating goodness of fit within data.
         """
     trial_starts = sensor_data['r_start'][0]
-    ax = sns.heatmap(rmse_dataframe)
+    ax = sns.heatmap(rmse_dataframe, cbar_kws={'label': 'RMSE error (px)'})
     plt.hlines(trial_starts, *ax.get_xlim())
+    plt.savefig(save_path + '/colorplot/heatmap_rmse_trials.png', dpi=1400)
+    plt.close()
+    ax = sns.heatmap(rmse_dataframe, cbar_kws={'label': 'RMSE error (px)'})
     plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
     plt.close()
-    ax = sns.heatmap(prob_data)
+    ax = sns.heatmap(prob_data,  cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
     plt.hlines(trial_starts, *ax.get_xlim())
+    plt.savefig(save_path + '/colorplot/heatmap_probs_trials.png', dpi=1400)
+    plt.close()
+    ax = sns.heatmap(prob_data,  cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
     plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
     plt.close()
 
 
-def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data, window_times=None):
+def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data):
     """ Function to plot a given set of time-series data from 3-D predictions of keypoints,
         their probability of location, and the rmse. Option to display windows of behavior vs non-behavior."""
     behavior_starts = sensor_data['r_start'].to_numpy()[0]
@@ -89,7 +99,14 @@ def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data, windo
     plt.xlabel('Time')
     plt.ylabel('Position (m)')
     plt.ylim([-0.2, 1])
-    plt.legend()
+    plt.savefig(save_path + '/timeseries/total_3D_timeseries_behavior_starts.png', dpi=1400)
+    plt.close()
+    plt.figure()
+    for name, col in pred_data.items():
+        plt.plot(col.to_numpy().T, label=name)
+    plt.xlabel('Time')
+    plt.ylabel('Position (m)')
+    plt.ylim([-0.2, 1])
     plt.savefig(save_path + '/timeseries/total_3D_timeseries.png', dpi=1400)
     plt.close()
     fig, ax1 = plt.subplots()
@@ -106,6 +123,22 @@ def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data, windo
     ax2.plot(mean, color='b', label='Mean Probability')
     ax2.set_ylabel('P-Value (DLC)', color='b')
     plt.vlines(behavior_starts, -0.2, 1, colors='r', label='Behavior Start')
+    plt.legend()
+    plt.savefig(save_path + '/timeseries/timeseries_summary_behavior_starts.png', dpi=1400)
+    plt.close()
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    mean = []
+    for row in pred_data.iterrows():
+        mean.append(np.mean(row[1].to_numpy()))
+    ax1.plot(mean, color='g', label='Mean Values 3-D Positions')
+    plt.xlabel('Time')
+    ax1.set_ylabel('Mean Position', color='g')
+    mean = []
+    for row in prob_data.iterrows():
+        mean.append(np.mean(row[1].to_numpy()))
+    ax2.plot(mean, color='b', label='Mean Probability')
+    ax2.set_ylabel('P-Value (DLC)', color='b')
     plt.legend()
     plt.savefig(save_path + '/timeseries/timeseries_summary.png', dpi=1400)
     plt.close()
@@ -222,12 +255,16 @@ def make_behavior_mask(start_times, stop_times, time):
     return behavior_mask
 
 
+
+
 def visualize_data(root_dir, rat, date, session, pred_data, prob_data, rmse_data, sensor_data, kinematics):
     """ Function, callable within ReachProcess, to visualize experimental data. Creates new directory structure to
         hold obtained plots, saves them within this structure. For more information, please see the documentation. """
     save_path = create_directory_for_session(root_dir, rat, date, session, win_dir=True)
-    preprocessing_boxplot(save_path, rmse_data, prob_data)
-    preprocessing_colormaps(save_path, rmse_data, prob_data,sensor_data)
+    #correlation_plots(pred_data, 0, 90000)
+    #preprocessing_boxplot(save_path, rmse_data, prob_data)
+    #preprocessing_colormaps(save_path, rmse_data, prob_data,sensor_data)
+    pdb.set_trace()
     preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data)
     #kinematics_boxplot(save_path, kinematics)
     #make_general_kinematic_timeseries_plots(save_path, kinematics)
