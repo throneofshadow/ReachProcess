@@ -6,13 +6,11 @@ import pdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import seaborn as sns
 from pathlib import Path
 import os
-from matplotlib import gridspec
+import cv2
 import imageio
-from mpl_toolkits.mplot3d import Axes3D
 
 
 def mkdir_p(my_path):
@@ -270,16 +268,31 @@ def visualize_data(root_dir, rat, date, session, pred_data, prob_data, rmse_data
     # kinematics_boxplot(save_path, kinematics)
     # make_general_kinematic_timeseries_plots(save_path, kinematics)
     behavior_start = sensor_data['r_start'][0]
-    behavior_stop = sensor_data['r_stop'][0]
+    header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time',
+              'Handedness', 'Tug of War']
+    trials = np.arange(0, len(behavior_start), 1)
+    # start_times = np.zeros()
+    # start_times[0:5] = [500, 1000, 1500, 2000, 2500]
+    reach_start_times = np.zeros(len(behavior_start))
+    trial_class = np.zeros(len(behavior_start))
+    number_reaches = np.zeros(len(behavior_start))
+    handedness = np.zeros(len(behavior_start))
+    tug_of_war = np.zeros(len(behavior_start))
+    data = np.array(
+        [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, handedness,
+         tug_of_war]).T
+    sim_df = pd.DataFrame(data, columns=header)
+    sim_df.to_csv('RM14_20_S1_times.csv', index=False)
     # for i, times in enumerate(behavior_start):
     #    stop = behavior_stop[i]
     #    trial_path = save_path + '/trials/trial ' + str(i) + '/visualization/'
     #    mkdir_p(trial_path)
     #    mkdir_p(trial_path + '/3d_plots/')
     #make_3d_scatter(pred_data, prob_data, save_path)
-    make_3_d_gif_from_plots(save_path, fps_val=10)
+    #make_3_d_gif_from_plots(save_path, fps_val=10)
     #plot_kinematics_for_gif(save_path, sensor_data, kinematics, prob_data)
-    #make_kin_gif_from_plots(save_path, fps_val=10)
+    make_kin_gif_from_plots(save_path, fps_val=10)
+    make_combined_video_gif(save_path, fps_val=10)
     licking_events = make_lick_event(sensor_data['lick'][0])
     behavior_mask = make_behavior_mask(sensor_data['r_start'][0], sensor_data['r_stop'][0],
                                        np.asarray(sensor_data['time'][0]))
@@ -287,14 +300,14 @@ def visualize_data(root_dir, rat, date, session, pred_data, prob_data, rmse_data
 
 def make_3d_scatter(pred_data, prob_data, save_path):
     # pdb.set_trace()
-    for n in range(0, pred_data.shape[0]-90000):  # Iterate over entire block of data
+    for n in range(0, pred_data.shape[0]):  # Iterate over entire block of data
         # Check if overlap in lag times for 3-D plot, lag = 5
         if n < 6:
             m = 0
         else:
             m = n - 5
         plt.tight_layout()
-        # plt.figure(figsize=(12, 12))
+        plt.figure(figsize=(4, 4))
         ax = plt.axes(projection='3d')
         # gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
         # ax = fig.add_subplot(gs[0], projection='3d')
@@ -303,88 +316,95 @@ def make_3d_scatter(pred_data, prob_data, save_path):
         ax.set_zlabel('Z (m)')
         ax.set_ylabel('Y (m)')
         ax.set_xlabel('X (m)')
-        ax.set_xlim([.15, .25])
+        ax.set_xlim([.1, .2])
         ax.set_ylim([0.15, 0.25])
-        ax.set_zlim([0.1, 0.2])
+        ax.set_zlim([0.14, 0.2])
         # plt.subplots_adjust(top=0.95, bottom=0.9)
         # ax.text()
         # ax.text(5, 5, "Rat is currently: 404 Status not Found", fontsize="xx-large", va="top")
         for i in range(0, n - m):  # Loop through each value in alpha for plotting
-            if i == m-n:  # set marker to star
+            if i == m - n:  # set marker to star
                 marker_point = '*'
             else:
                 marker_point = 'o'
             ax.plot(pred_data['Handle X'][m + i:m + i + 1], pred_data['Handle Y'][m + i:m + i + 1],
                     pred_data['Handle Z'][m + i:m + i + 1],
-                    color='k', alpha=prob_data['Handle P'][m + i:m + 1 + i].loc[m+i], linestyle='None', marker=marker_point,)
+                    color='k', alpha=prob_data['Handle P'][m + i:m + 1 + i].loc[m + i], linestyle='None',
+                    marker=marker_point, )
             ax.plot(pred_data['Right Forearm X'][m + i:m + i + 1],
                     pred_data['Right Forearm Y'][m + i:m + i + 1],
                     pred_data['Right Forearm Z'][m + i:m + i + 1],
-                    color='b', linestyle='None', marker=marker_point, alpha=prob_data['Forearm 1 P'][m + i:m + i + 1].loc[m+i])
+                    color='b', linestyle='None', marker=marker_point,
+                    alpha=prob_data['Forearm 1 P'][m + i:m + i + 1].loc[m + i])
             ax.plot(pred_data['Right Wrist X'][m + i:m + i + 1],
                     pred_data['Right Wrist Y'][m + i:m + i + 1],
                     pred_data['Right Wrist Z'][m + i:m + i + 1],
                     color='dodgerblue', linestyle='None', marker=marker_point,
-                    alpha=prob_data['Wrist 1 P'][m + i:m + i + 1].loc[m+i])
+                    alpha=prob_data['Wrist 1 P'][m + i:m + i + 1].loc[m + i])
             #  alpha=prob_data['Wrist 1 P'][m:n+10],
             ax.plot(pred_data['Right Palm X'][m:n + 10],
                     pred_data['Right Palm Y'][m:n + 10],
                     pred_data['Right Palm Z'][m:n + 10],
-                    color='navy', linestyle='None', marker=marker_point, alpha=prob_data['Palm 1 P'].loc[m+i])
+                    color='navy', linestyle='None', marker=marker_point, alpha=prob_data['Palm 1 P'].loc[m + i])
             #  alpha=prob_data['Palm 1 P'][m:n+10],
             ax.plot(pred_data['Left Wrist X'][m + i:m + i + 1],
                     pred_data['Left Wrist Y'][m + i:m + i + 1],
                     pred_data['Left Wrist Z'][m + i:m + i + 1],
                     color='chartreuse', linestyle='None', marker=marker_point,
-                    alpha=prob_data['Wrist 2 P'].loc[m+i])
+                    alpha=prob_data['Wrist 2 P'].loc[m + i])
             #  alpha=prob_data['Wrist 2 P'][m:n+10],
             ax.plot(pred_data['Left Palm X'][m + i:m + i + 1],
                     pred_data['Left Palm Y'][m + i:m + i + 1],
                     pred_data['Left Palm Z'][m + i:m + i + 1],
-                    color='g', linestyle='None', marker=marker_point, alpha=prob_data['Palm 2 P'].loc[m+i])
+                    color='g', linestyle='None', marker=marker_point, alpha=prob_data['Palm 2 P'].loc[m + i])
             # alpha=prob_data['Palm 2 P'][m:n+10],
             ax.plot(pred_data['Left Forearm X'][m + i:m + i + 1],
                     pred_data['Left Forearm Y'][m + i:m + i + 1],
                     pred_data['Left Forearm Z'][m + i:m + i + 1], marker=marker_point,
-                    color='limegreen', linestyle='None', alpha=prob_data['Forearm 2 P'][m + i:m + i + 1].loc[m+i])
+                    color='limegreen', linestyle='None', alpha=prob_data['Forearm 2 P'][m + i:m + i + 1].loc[m + i])
         # alpha = prob_data['Forearm 2 P'][m:n + 10],
         plt.legend(['Handle', 'Right Forearm', 'Right Wrist', 'Right Palm', 'Left Wrist', 'Left Palm', 'Left Forearm'],
-                   loc='upper right')
+                   loc='upper right', fontsize='small')
         plt.margins(0.0005)
         # plt.show()
-        #pdb.set_trace()
+        # pdb.set_trace()
         # check to see if previous file exists
         filename = save_path + '\\3d_plots\\' + str(n) + '_scatter_trial.png'
         if os.path.exists(filename):
             os.remove(filename)
-        plt.savefig(filename)
+        plt.savefig(filename, dpi=120)
         plt.close('all')
 
 
 def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabilities):
     time = sensor_data['time'][0]
     licking_data = sensor_data['lick'][0]
-    for n in range(0, len(time) - 9000):
+    for n in range(0, len(time)):
         if n < 10:
             l = 0
         else:
             l = n - 10
-        plt.figure()
+        plt.figure(figsize=(4, 2))
         c_time = time[l:n]
         for i, c in enumerate(c_time):
             if c in licking_data:
                 plt.vlines(time[i], c='k', ymin=0.0, ymax=1.2, label='Lick')
-        for i in range(0, n-l):  # Iterate over lag terms, plot
-            plt.scatter(time[l+i:l+i+1], kinematics_data['Left Palm S'][l+i:l+i+1], alpha=probabilities['Palm 2 P'].loc[l+i],
-                     c='g')
-            plt.scatter(time[l+i:l+i+1], kinematics_data['Right Palm S'][l+i:l+i+1], alpha=probabilities['Palm 1 P'].loc[l+i],
-                     c='dodgerblue')
-            plt.scatter(time[l+i:l+i+1], kinematics_data['Handle S'][l+i:l+i+1], alpha=probabilities['Handle P'].loc[l+i],c='y')
-            plt.scatter(time[l+i:l+i+1], kinematics_data['Nose S'][l+i:l+i+1], c='r', alpha=probabilities['Nose P'].loc[l+i])
-            plt.scatter(time[l+i:l+i+1], kinematics_data['Left Wrist S'][l+i:l+i+1], alpha=probabilities['Wrist 2 P'].loc[l+i],
-                     c='chartreuse')
-            plt.plot(time[l+i:l+i+1], kinematics_data['Right Wrist S'][l+i:l+i+1], c='b',
-                     alpha=probabilities['Wrist 1 P'].loc[l+i])
+        for i in range(0, n - l+5):  # Iterate over lag terms, plot
+            plt.scatter(time[l + i:l + i + 1], kinematics_data['Left Palm S'][l + i:l + i + 1],
+                        alpha=probabilities['Palm 2 P'].loc[l + i],
+                        c='g')
+            plt.scatter(time[l + i:l + i + 1], kinematics_data['Right Palm S'][l + i:l + i + 1],
+                        alpha=probabilities['Palm 1 P'].loc[l + i],
+                        c='dodgerblue')
+            plt.scatter(time[l + i:l + i + 1], kinematics_data['Handle S'][l + i:l + i + 1],
+                        alpha=probabilities['Handle P'].loc[l + i], c='y')
+            plt.scatter(time[l + i:l + i + 1], kinematics_data['Nose S'][l + i:l + i + 1], c='r',
+                        alpha=probabilities['Nose P'].loc[l + i])
+            plt.scatter(time[l + i:l + i + 1], kinematics_data['Left Wrist S'][l + i:l + i + 1],
+                        alpha=probabilities['Wrist 2 P'].loc[l + i],
+                        c='chartreuse')
+            plt.plot(time[l + i:l + i + 1], kinematics_data['Right Wrist S'][l + i:l + i + 1], c='b',
+                     alpha=probabilities['Wrist 1 P'].loc[l + i])
         plt.plot(time[n], kinematics_data['Right Wrist S'][n], color='b', marker='*', label='Right Wrist Speed')
         plt.plot(time[n], kinematics_data['Left Wrist S'][n], color='chartreuse', marker='*', label='Left Wrist Speed')
         plt.plot(time[n], kinematics_data['Nose S'][n], color='r', marker='*', label='Nose Speed')
@@ -393,9 +413,9 @@ def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabiliti
         plt.plot(time[n], kinematics_data['Handle S'][n], color='y', marker='*', label='Handle Speed')
         plt.xlabel('Time (s)')
         plt.ylabel('Speed (M/s)')
-        plt.legend(loc='upper right')
+        plt.legend(loc='upper right', fontsize='small')
         plt.ylim([0.0, 1.2])
-        plt.savefig(save_path + '/timeseries/' + str(n) + 'kinematics_summary.png')
+        plt.savefig(save_path + '/timeseries/' + str(n) + 'kinematics_summary.png', dpi=120)
         plt.close('all')
 
 
@@ -405,6 +425,7 @@ def make_3_d_gif_from_plots(plot_path, fps_val=10):
     for file in glob.glob(search_path + '*_scatter_trial.png'):
         images.append(imageio.imread(file))
     imageio.mimsave(plot_path + '/classification_videos/total_3d_movie.mp4', images, fps=fps_val)
+    print('3-D GIF made. ')
 
 
 def make_kin_gif_from_plots(plot_path, fps_val=10):
@@ -416,37 +437,60 @@ def make_kin_gif_from_plots(plot_path, fps_val=10):
         except:
             pdb.set_trace()
     imageio.mimsave(plot_path + '\\classification_videos\\sensor_movie.mp4', images, fps=fps_val)
+    print('Kinematic GIF made. ')
 
 
 def make_combined_video_gif(root_path, fps_val=10):
     search_path = root_path + "\\classification_videos\\"
-    videos_to_resize = []
+    i = 0
     for file in glob.glob(search_path + '*sensor_movie.mp4'):
-        kinematic_plot = imageio.get_reader(file)
+        kinematic_plot = cv2.VideoCapture(file)
+        kinematic_frames = []
+        while kinematic_plot.isOpened() and i < 4000:
+            ret, frame = kinematic_plot.read()
+            kinematic_frames.append(frame)
+            i += 1
+        kinematic_plot.release()
+        i = 0
     for file in glob.glob(search_path + '*total_3d_movie.mp4'):
-        pred_movie = imageio.get_reader(file)
-    # Temporary fix, must be able to cd into PNS for this path and get DLC prediction video.
+        pred_movie = cv2.VideoCapture(file)
+        pred_frames = []
+        while pred_movie.isOpened() and i < 4000:
+            ret, frame = pred_movie.read()
+            pred_frames.append(frame)
+            i += 1
+        pred_movie.release()
+        i = 0
     for file in glob.glob(search_path + '*.mp4'):
         if 'cam2' in file:
-            video = imageio.get_reader(file)
-
-    # Create writer object
-    new_gif = imageio.get_writer('output.gif')
-    number_of_frames = min(video.get_length(), pred_movie.get_length(), kinematic_plot.get_length())
+            video = cv2.VideoCapture(file)
+            video_frames = []
+            while video.isOpened() and i < 4000:
+                ret, frame = video.read()
+                video_frames.append(frame)
+                i += 1
+            video.release()
+            i = 0
+    gif_path = search_path + 'Classification_Video.avi'
+    frame_width = 688 + 480  # 1080p
+    frame_height = 720
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    new_gif = cv2.VideoWriter(gif_path, apiPreference=0, fourcc=fourcc,
+                              fps=fps_val, frameSize=(frame_width, frame_height))  # Create writer object
+    number_of_frames = min(len(video_frames), len(pred_frames), len(kinematic_frames))
+    ng = []
     for frame_number in range(number_of_frames):
-        img1 = video.get_next_data()
-        img2 = pred_movie.get_next_data()
-        img3 = kinematic_plot.get_next_data()
+        img1 = video_frames[frame_number]
+        img2 = pred_frames[frame_number]  # 480 x 640
+        img3 = kinematic_frames[frame_number]  # 480 x 640
         # here is the magic
         # reshape images to regions of interest, match indices to make a ~ 1080 x 720 px size video.
-        #new_image = np.zeros((img1.shape[0] + img2))
-        #kinematic_image = np.zeros((img1.shape[0]))
-        kinematic_image = np.vstack([img2, img3])# sh
-        new_image = np.hstack((img1, kinematic_image))
-        new_gif.append_data(new_image)
-
-    video.close()
-    pred_movie.close()
-    kinematic_image.close()
-    new_gif.close()
-
+        new_image = np.zeros((720, 688 + 480, 3)).astype(np.uint8)  # we want to reshape image into this size, keep video aspect ratio.
+        kinematic_image = np.zeros((720, 480, 3))  # this is the size of the kinematic plots.
+        kinematic_image[0:480, :, :] = img2  # fill with 3-D plots
+        kinematic_image[480:720, :, :] = img3
+        new_image[0:688, 0:688, :] = img1.astype(np.uint8)
+        new_image[:, 688:688 + 480, :] = kinematic_image.astype(np.uint8)
+        ng.append(new_image)
+        new_gif.write(new_image)
+    new_gif.release()
