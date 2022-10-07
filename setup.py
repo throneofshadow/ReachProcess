@@ -11,7 +11,8 @@ setup(
     author_email='bnelson@lbl.gov',
     license='BSD-3-Clause-LBNL',
     packages=['ReachSample'],
-    install_requires=['cv2', 'vidgear', 'pdb', 'numpy', 'glob', 'collections', 'os', 'glob', 'tqdm', 'pickle', 'scipy'],
+    install_requires=['cv2', 'vidgear', 'pdb', 'numpy', 'glob', 'collections', 'os', 'glob', 'tqdm', 'pickle', 'scipy',
+                      'deeplabcut', 'imageio', 'pandas', 'matplotlib'],
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Science/Research',

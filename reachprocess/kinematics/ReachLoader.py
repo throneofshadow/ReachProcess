@@ -1709,7 +1709,6 @@ class ReachCompute:
                 if timeseries_plot:
                     self.plot_timeseries_features()
                 if plot_reach:
-
                     self.plot_predictions_videos(segment=True)
                     self.make_gif_reaching(segment=True, nr=0)
                     print('Reaching GIF made for reach ' + str(0) + 'in trial ' + str(ix))
@@ -1995,7 +1994,7 @@ class ReachCompute:
         for isx in range(tlde, tldr):
             self.filename = self.sstr + '/plots/' + str(isx) + 'palm_prob_timeseries.png'
             self.set_lag_plot_term(isx)
-            fixit1 = plt.figure(figsize=(28,28/2))
+            fixit1 = plt.figure(figsize=(28, 28/2))
             #axel = plt.subplot(311)
             axel1 = plt.subplot(312)
             axel2 = plt.subplot(313, sharex=axel1)
