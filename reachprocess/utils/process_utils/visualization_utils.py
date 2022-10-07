@@ -1,16 +1,14 @@
 """ Code intended to visualize raw data and statistics for DeepLabCut keypoint predictions
     and their associated probabilities, 3-D positions, velocities, speeds and accelerations. These visualization functions
     may be extended to individual segments of timeseries data (such as reaching).  Brett Nelson 8/2022"""
-import glob
 import pdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-import os
-import cv2
-import imageio
+from mpl_toolkits.mplot3d import Axes3D
+from tqdm import tqdm
 
 
 def mkdir_p(my_path):
@@ -36,7 +34,7 @@ def load_raw_data_from_disk(disk_path):
     return dataframe
 
 
-def create_directory_for_session(root_dir, rat, date, session, win_dir=True):
+def create_directory_for_session(root_dir, rat, date, session, win_dir=False):
     """ Function to intake current video path, create new directories in a main directory to save newly created plots
         in a structured directory similar to ones used to hold experimental data. """
     if win_dir:
@@ -47,15 +45,16 @@ def create_directory_for_session(root_dir, rat, date, session, win_dir=True):
         mkdir_p(process_path + "\\3d_plots")
         mkdir_p(process_path + "\\classification_videos")
         mkdir_p(process_path + "\\timeseries")
-
     else:
-        process_path = root_dir + "ReachProcess/" + rat + '/' + date + '/' + session
+        process_path = root_dir + "/ReachProcess/" + rat + '/' + date + '/' + session
         mkdir_p(process_path)
+        #mkdir_p(process_path+
         mkdir_p(process_path + "/boxplot")
         mkdir_p(process_path + "/colorplot")
         mkdir_p(process_path + "/3d_plots")
         mkdir_p(process_path + "/classification_videos")
         mkdir_p(process_path + "/timeseries")
+        mkdir_p(process_path + '/trials')
     return process_path
 
 
@@ -63,35 +62,44 @@ def preprocessing_boxplot(save_path, rmse_dataframe, prob_data):
     """ Function to create standardized boxplots for keypoint variables within ecosystem. """
     rmse_dataframe.boxplot(fontsize=3, showfliers=False)
     plt.ylabel('RMSE (px)')
-    plt.savefig(save_path + '\\boxplot\\rmse_values_boxplot.png', dpi=1400)
+    plt.savefig(save_path + '/boxplot/rmse_values_boxplot.png', dpi=1400)
     plt.close()
-    prob_data.boxplot(fontsize=3, showfliers=False)
-    plt.ylabel('DLC Confidence (p-value)')
-    plt.savefig(save_path + '\\boxplot\\prob_values_boxplot.png', dpi=1400)
-    plt.close()
+    try:
+        prob_data.boxplot(fontsize=3, showfliers=False)
+        plt.ylabel('DLC Confidence (p-value)')
+        plt.savefig(save_path + '/boxplot/prob_values_boxplot.png', dpi=1400)
+        plt.close()
+    except:
+        pdb.set_trace()
+    
 
 
 def preprocessing_colormaps(save_path, rmse_dataframe, prob_data, sensor_data):
     """ Function to plot 2-D colordepth map for data types used in evaluating goodness of fit within data.
         """
     trial_starts = sensor_data['r_start'][0]
-    ax = sns.heatmap(rmse_dataframe, cbar_kws={'label': 'RMSE error (px)'})
-    plt.hlines(trial_starts, *ax.get_xlim())
-    plt.savefig(save_path + '/colorplot/heatmap_rmse_trials.png', dpi=1400)
-    plt.close()
-    ax = sns.heatmap(rmse_dataframe, cbar_kws={'label': 'RMSE error (px)'})
-    plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
-    plt.close()
-    ax = sns.heatmap(prob_data, cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
-    plt.hlines(trial_starts, *ax.get_xlim())
-    plt.savefig(save_path + '/colorplot/heatmap_probs_trials.png', dpi=1400)
-    plt.close()
-    ax = sns.heatmap(prob_data, cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
-    plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
-    plt.close()
+    try:
+        ax = sns.heatmap(rmse_dataframe,cbar_kws={'label': 'RMSE error (px)'})
+        plt.hlines(trial_starts, *ax.get_xlim())
+        plt.savefig(save_path + '/colorplot/heatmap_rmse_start_times.png', dpi=1400)
+        plt.close()
+        ax = sns.heatmap(rmse_dataframe)
+        plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
+        plt.close()
+    except:
+        pdb.set_trace()
+    try:
+        ax = sns.heatmap(prob_data, cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
+        plt.hlines(trial_starts, *ax.get_xlim())
+        plt.savefig(save_path + '/colorplot/heatmap_probs_start_times.png', dpi=1400)
+        plt.close()
+        ax = sns.heatmap(prob_data)
+        plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
+        plt.close()
+    except:
+        pdb.set_trace()
 
-
-def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data):
+def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data, window_times=None):
     """ Function to plot a given set of time-series data from 3-D predictions of keypoints,
         their probability of location, and the rmse. Option to display windows of behavior vs non-behavior."""
     behavior_starts = sensor_data['r_start'].to_numpy()[0]
@@ -190,7 +198,7 @@ def kinematics_boxplot(save_path, kinematics_data):
     plt.savefig(save_path + '/boxplots/acceleration_x.png', dpi=1400)
     plt.close()
     kinematics_data.boxplot(column=names_ay, showfliers=False)
-    plt.savefig(save_path + '/boxplots/acceleration_y.png', dpi=1400)
+    plt.savefig(save_path+'/boxplots/acceleration_y.png', dpi=1400)
     plt.close()
     kinematics_data.boxplot(column=names_az, showfliers=False)
     plt.savefig(save_path + '/boxplots/acceleration_z.png', dpi=1400)
@@ -217,7 +225,7 @@ def make_general_kinematic_timeseries_plots(save_path, kinematics_data):
     plt.savefig(save_path + '/timeseries/acceleration_x.png', dpi=1400)
     plt.close()
     kinematics_data.plot(column=names_ay)
-    plt.savefig(save_path + '/timeseries/acceleration_y.png', dpi=1400)
+    plt.savefig(save_path+'/timeseries/acceleration_y.png', dpi=1400)
     plt.close()
     kinematics_data.plot(column=names_az)
     plt.savefig(save_path + '/timeseries/acceleration_z.png', dpi=1400)
@@ -229,6 +237,7 @@ def make_general_kinematic_timeseries_plots(save_path, kinematics_data):
 
 def make_palm_timeseries_plots(save_path, kinematic_data):
     """ Function to obtain heuristics for palm only. """
+
 
 
 def make_lick_event(licking_times, window_length=1, num_events=10):
@@ -255,52 +264,54 @@ def make_behavior_mask(start_times, stop_times, time):
     return behavior_mask
 
 
-def visualize_data(root_dir, rat, date, session, pred_data, prob_data, rmse_data, sensor_data, kinematics):
+def visualize_data(root_dir, DLC_video_path, rat, date, session, pred_data, prob_data, rmse_data, sensor_data, kinematics):
     """ Function, callable within ReachProcess, to visualize experimental data. Creates new directory structure to
         hold obtained plots, saves them within this structure. For more information, please see the documentation. """
-    save_path = create_directory_for_session(root_dir, rat, date, session, win_dir=True)
-    # Make 'test' set of diagnostic d
-    # correlation_plots(pred_data, 0, 90000)
-    # preprocessing_boxplot(save_path, rmse_data, prob_data)
-    # preprocessing_colormaps(save_path, rmse_data, prob_data,sensor_data)
-    # preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data)
+    save_path = create_directory_for_session(root_dir, rat, date, session, win_dir=False)
+    try:
+        preprocessing_boxplot(save_path, rmse_data, prob_data)
+    except:
+        print('Could not create boxplots')
+    try:
+        preprocessing_colormaps(save_path, rmse_data, prob_data,sensor_data)
+    except:
+        print('Could not create colormaps')
+    try:
+        preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data)
+    except:
+        print('Could not create timeseries plots')
+    behavior_start = sensor_data['r_start'][0] # Get start time
+    # Make 
+    sim_df = make_classification_file(behavior_start)
+    sim_df.to_csv(save_path + '/classification_videos/'+str(rat)+str(date)+str(session)+'_predictions.csv', index=False)
+    make_3d_scatter(pred_data, prob_data, save_path)
+    make_3_d_gif_from_plots(save_path, fps_val=10)
+    plot_kinematics_for_gif(save_path, sensor_data, kinematics, prob_data)
+    make_kin_gif_from_plots(save_path, fps_val=10)
+    make_combined_video_gif(DLC_video_path, save_path, fps_val=10)
 
-    # kinematics_boxplot(save_path, kinematics)
-    # make_general_kinematic_timeseries_plots(save_path, kinematics)
-    behavior_start = sensor_data['r_start'][0]
-    header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time',
-              'Handedness', 'Tug of War']
+
+
+def make_classification_file(behavior_start):
+    header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time', 'Num Grasps',
+              'Handedness', 'Tug of War', 'Notes']
     trials = np.arange(0, len(behavior_start), 1)
-    # start_times = np.zeros()
-    # start_times[0:5] = [500, 1000, 1500, 2000, 2500]
     reach_start_times = np.zeros(len(behavior_start))
     trial_class = np.zeros(len(behavior_start))
     number_reaches = np.zeros(len(behavior_start))
     handedness = np.zeros(len(behavior_start))
     tug_of_war = np.zeros(len(behavior_start))
+    num_grasps = np.zeros(len(behavior_start))
+    notes = np.zeros(len(behavior_start))
     data = np.array(
-        [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, handedness,
-         tug_of_war]).T
+        [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, num_grasps, handedness,
+         tug_of_war, notes]).T
     sim_df = pd.DataFrame(data, columns=header)
-    sim_df.to_csv('RM14_20_S1_times.csv', index=False)
-    # for i, times in enumerate(behavior_start):
-    #    stop = behavior_stop[i]
-    #    trial_path = save_path + '/trials/trial ' + str(i) + '/visualization/'
-    #    mkdir_p(trial_path)
-    #    mkdir_p(trial_path + '/3d_plots/')
-    #make_3d_scatter(pred_data, prob_data, save_path)
-    #make_3_d_gif_from_plots(save_path, fps_val=10)
-    #plot_kinematics_for_gif(save_path, sensor_data, kinematics, prob_data)
-    make_kin_gif_from_plots(save_path, fps_val=10)
-    make_combined_video_gif(save_path, fps_val=10)
-    licking_events = make_lick_event(sensor_data['lick'][0])
-    behavior_mask = make_behavior_mask(sensor_data['r_start'][0], sensor_data['r_stop'][0],
-                                       np.asarray(sensor_data['time'][0]))
+    return sim_df
 
 
 def make_3d_scatter(pred_data, prob_data, save_path):
-    # pdb.set_trace()
-    for n in range(0, pred_data.shape[0]):  # Iterate over entire block of data
+    for n in tqdm(range(0, pred_data.shape[0])):  # Iterate over entire block of data
         # Check if overlap in lag times for 3-D plot, lag = 5
         if n < 6:
             m = 0
@@ -369,7 +380,7 @@ def make_3d_scatter(pred_data, prob_data, save_path):
         # plt.show()
         # pdb.set_trace()
         # check to see if previous file exists
-        filename = save_path + '\\3d_plots\\' + str(n) + '_scatter_trial.png'
+        filename = save_path + '/3d_plots/' + str(n) + '_scatter_trial.png'
         if os.path.exists(filename):
             os.remove(filename)
         plt.savefig(filename, dpi=120)
@@ -379,7 +390,7 @@ def make_3d_scatter(pred_data, prob_data, save_path):
 def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabilities):
     time = sensor_data['time'][0]
     licking_data = sensor_data['lick'][0]
-    for n in range(0, len(time)):
+    for n in tqdm(range(0, len(time))):
         if n < 10:
             l = 0
         else:
@@ -413,7 +424,7 @@ def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabiliti
         plt.plot(time[n], kinematics_data['Handle S'][n], color='y', marker='*', label='Handle Speed')
         plt.xlabel('Time (s)')
         plt.ylabel('Speed (M/s)')
-        plt.legend(loc='upper right', fontsize='small')
+        plt.legend(loc='upper right', fontsize='x-small')
         plt.ylim([0.0, 1.2])
         plt.savefig(save_path + '/timeseries/' + str(n) + 'kinematics_summary.png', dpi=120)
         plt.close('all')
@@ -436,17 +447,17 @@ def make_kin_gif_from_plots(plot_path, fps_val=10):
             images.append(imageio.imread(file))
         except:
             pdb.set_trace()
-    imageio.mimsave(plot_path + '\\classification_videos\\sensor_movie.mp4', images, fps=fps_val)
+    imageio.mimsave(plot_path + '/classification_videos/sensor_movie.mp4', images, fps=fps_val)
     print('Kinematic GIF made. ')
 
 
-def make_combined_video_gif(root_path, fps_val=10):
-    search_path = root_path + "\\classification_videos\\"
+def make_combined_video_gif(DLC_video_path, root_path, fps_val=10):
+    search_path = root_path + "/classification_videos/"
     i = 0
     for file in glob.glob(search_path + '*sensor_movie.mp4'):
         kinematic_plot = cv2.VideoCapture(file)
         kinematic_frames = []
-        while kinematic_plot.isOpened() and i < 4000:
+        while kinematic_plot.isOpened():
             ret, frame = kinematic_plot.read()
             kinematic_frames.append(frame)
             i += 1
@@ -455,17 +466,18 @@ def make_combined_video_gif(root_path, fps_val=10):
     for file in glob.glob(search_path + '*total_3d_movie.mp4'):
         pred_movie = cv2.VideoCapture(file)
         pred_frames = []
-        while pred_movie.isOpened() and i < 4000:
+        while pred_movie.isOpened():
             ret, frame = pred_movie.read()
             pred_frames.append(frame)
             i += 1
         pred_movie.release()
         i = 0
-    for file in glob.glob(search_path + '*.mp4'):
+    # Temporary fix, must be able to cd into PNS for this path and get DLC prediction video.
+    for file in glob.glob(DLC_video_path):
         if 'cam2' in file:
             video = cv2.VideoCapture(file)
             video_frames = []
-            while video.isOpened() and i < 4000:
+            while video.isOpened():
                 ret, frame = video.read()
                 video_frames.append(frame)
                 i += 1
