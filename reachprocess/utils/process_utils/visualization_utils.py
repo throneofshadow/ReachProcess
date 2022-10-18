@@ -7,12 +7,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-import imageio
-from tqdm import tqdm
-import glob
 import os
+from tqdm import tqdm
+import imageio
+import glob
 import cv2
-
+from multiprocessing import Pool
 
 def mkdir_p(my_path):
     """Creates a directory. equivalent to using mkdir -p on the command line.
@@ -37,284 +37,285 @@ def load_raw_data_from_disk(disk_path):
     return dataframe
 
 
-def create_directory_for_session(root_dir, rat, date, session, win_dir=False):
-    """ Function to intake current video path, create new directories in a main directory to save newly created plots
-        in a structured directory similar to ones used to hold experimental data. """
-    if win_dir:
-        process_path = root_dir + "ReachProcess\\" + rat + '\\' + date + '\\' + session
-        mkdir_p(process_path)
-        mkdir_p(process_path + "\\boxplot")
-        mkdir_p(process_path + "\\colorplot")
-        mkdir_p(process_path + "\\3d_plots")
-        mkdir_p(process_path + "\\classification_videos")
-        mkdir_p(process_path + "\\timeseries")
-    else:
-        process_path = root_dir + "/ReachProcess/" + rat + '/' + date + '/' + session
-        mkdir_p(process_path)
-        #mkdir_p(process_path+
-        mkdir_p(process_path + "/boxplot")
-        mkdir_p(process_path + "/colorplot")
-        mkdir_p(process_path + "/3d_plots")
-        mkdir_p(process_path + "/classification_videos")
-        mkdir_p(process_path + "/timeseries")
-        mkdir_p(process_path + '/trials')
-    return process_path
-
-
-def preprocessing_boxplot(save_path, rmse_dataframe, prob_data):
-    """ Function to create standardized boxplots for keypoint variables within ecosystem. """
-    rmse_dataframe.boxplot(fontsize=3, showfliers=False)
-    plt.ylabel('RMSE (px)')
-    plt.savefig(save_path + '/boxplot/rmse_values_boxplot.png', dpi=1400)
-    plt.close()
-    try:
-        prob_data.boxplot(fontsize=3, showfliers=False)
-        plt.ylabel('DLC Confidence (p-value)')
-        plt.savefig(save_path + '/boxplot/prob_values_boxplot.png', dpi=1400)
-        plt.close()
-    except:
-        pdb.set_trace()
-    
-
-
-def preprocessing_colormaps(save_path, rmse_dataframe, prob_data, sensor_data):
-    """ Function to plot 2-D colordepth map for data types used in evaluating goodness of fit within data.
+class Viz:
+    def __init__(self, root_dir, DLC_video_path, rat, date, session, pred_data, prob_data, rmse_data,
+                           sensor_data, kinematics, n_pools):
+        """"
+            Method to create visualizations for high-series data (3-D predictions, associated key-point probabilities,
+            root mean square error of keypoints, and kinematics of 3-D keypoints). Each visualization is created in a
+            tree-structured index (Rat, Date, Session) inside a data-lake (/nsds/cluster/storage for example).
         """
-    trial_starts = sensor_data['r_start'][0]
-    try:
-        ax = sns.heatmap(rmse_dataframe,cbar_kws={'label': 'RMSE error (px)'})
-        plt.hlines(trial_starts, *ax.get_xlim())
-        plt.savefig(save_path + '/colorplot/heatmap_rmse_start_times.png', dpi=1400)
+        self.pool = Pool(n_pools) # Initialize number of compute cores to run (local = 1, non-local >1)
+        self.pred_data = pred_data
+        self.prob_data = prob_data
+        self.kinematics_data = kinematics
+        self.rmse_data = rmse_data
+        self.time = sensor_data['time']
+        self.save_path = self.create_directory_for_session(root_dir, rat, date, session, win_dir=False)
+        try:
+            self.preprocessing_boxplot(self.save_path, rmse_data, prob_data)
+        except:
+            print('Could not create boxplots')
+        try:
+            self.preprocessing_colormaps(self.save_path, rmse_data, prob_data, sensor_data)
+        except:
+            print('Could not create colormaps')
+        try:
+            self.preprocessing_timeseries(self.save_path, pred_data, prob_data, sensor_data)
+        except:
+            print('Could not create timeseries plots')
+        behavior_start = sensor_data['r_start'][0]  # Get sensor start times (defined by standard deviation of pixels)
+        # Make the classification file (for annotation purposes)
+        # Check to see if classification file exists (if exists, don't make)
+        save_address = self.save_path + '/classification_videos/' + str(rat) + str(date) + str(session) + '_predictions.csv'
+        sim_df = self.make_classification_file(behavior_start)
+        sim_df.to_csv(save_address, index=False)
+        self.make_3d_scatter(pred_data, prob_data, self.save_path)
+        self.make_3_d_gif_from_plots(self.save_path, fps_val=10)
+        self.plot_kinematics_for_gif(self.save_path, sensor_data, kinematics, prob_data)
+        self.make_kin_gif_from_plots(self.save_path, fps_val=10)
+        self.make_combined_video_gif(DLC_video_path, self.save_path, fps_val=10)
+
+    def create_directory_for_session(self, root_dir, rat, date, session, win_dir=False):
+        """ Function to intake current video path, create new directories in a main directory to save newly created plots
+            in a structured directory similar to ones used to hold experimental data. """
+        if win_dir:
+            process_path = root_dir + "ReachProcess\\" + rat + '\\' + date + '\\' + session
+            mkdir_p(process_path)
+            mkdir_p(process_path + "\\boxplot")
+            mkdir_p(process_path + "\\colorplot")
+            mkdir_p(process_path + "\\3d_plots")
+            mkdir_p(process_path + "\\classification_videos")
+            mkdir_p(process_path + "\\timeseries")
+        else:
+            process_path = root_dir + "/ReachProcess/" + rat + '/' + date + '/' + session
+            mkdir_p(process_path)
+            #mkdir_p(process_path+
+            mkdir_p(process_path + "/boxplot")
+            mkdir_p(process_path + "/colorplot")
+            mkdir_p(process_path + "/3d_plots")
+            mkdir_p(process_path + "/classification_videos")
+            mkdir_p(process_path + "/timeseries")
+            mkdir_p(process_path + '/trials')
+        return process_path
+    def preprocessing_boxplot(self, save_path, rmse_dataframe, prob_data):
+        """ Function to create standardized boxplots for keypoint variables within ecosystem. """
+        rmse_dataframe.boxplot(fontsize=3, showfliers=False)
+        plt.ylabel('RMSE (px)')
+        plt.savefig(save_path + '/boxplot/rmse_values_boxplot.png', dpi=1400)
         plt.close()
-        ax = sns.heatmap(rmse_dataframe)
-        plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
+        try:
+            prob_data.boxplot(fontsize=3, showfliers=False)
+            plt.ylabel('DLC Confidence (p-value)')
+            plt.savefig(save_path + '/boxplot/prob_values_boxplot.png', dpi=1400)
+            plt.close()
+        except:
+            pdb.set_trace()
+
+    def preprocessing_colormaps(self, save_path, rmse_dataframe, prob_data, sensor_data):
+        """ Function to plot 2-D colordepth map for data types used in evaluating goodness of fit within data.
+            """
+        trial_starts = sensor_data['r_start'][0]
+        try:
+            ax = sns.heatmap(rmse_dataframe,cbar_kws={'label': 'RMSE error (px)'})
+            plt.hlines(trial_starts, *ax.get_xlim())
+            plt.savefig(save_path + '/colorplot/heatmap_rmse_start_times.png', dpi=1400)
+            plt.close()
+            ax = sns.heatmap(rmse_dataframe)
+            plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
+            plt.close()
+        except:
+            pdb.set_trace()
+        try:
+            ax = sns.heatmap(prob_data, cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
+            plt.hlines(trial_starts, *ax.get_xlim())
+            plt.savefig(save_path + '/colorplot/heatmap_probs_start_times.png', dpi=1400)
+            plt.close()
+            ax = sns.heatmap(prob_data)
+            plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
+            plt.close()
+        except:
+            pdb.set_trace()
+
+    def preprocessing_timeseries(self, save_path, pred_data, prob_data, sensor_data, window_times=None):
+        """ Function to plot a given set of time-series data from 3-D predictions of keypoints,
+            their probability of location, and the rmse. Option to display windows of behavior vs non-behavior."""
+        behavior_starts = sensor_data['r_start'].to_numpy()[0]
+        plt.figure()
+        for name, col in pred_data.items():
+            plt.plot(col.to_numpy().T, label=name)
+        plt.vlines(behavior_starts, -0.2, 1, colors='r', label='Behavior Start')
+        plt.xlabel('Time')
+        plt.ylabel('Position (m)')
+        plt.ylim([-0.2, 1])
+        plt.savefig(save_path + '/timeseries/total_3D_timeseries_behavior_starts.png', dpi=1400)
         plt.close()
-    except:
+        plt.figure()
+        for name, col in pred_data.items():
+            plt.plot(col.to_numpy().T, label=name)
+        plt.xlabel('Time')
+        plt.ylabel('Position (m)')
+        plt.ylim([-0.2, 1])
+        plt.savefig(save_path + '/timeseries/total_3D_timeseries.png', dpi=1400)
+        plt.close()
+        fig, ax1 = plt.subplots()
+        ax2 = ax1.twinx()
+        mean = []
+        for row in pred_data.iterrows():
+            mean.append(np.mean(row[1].to_numpy()))
+        ax1.plot(mean, color='g', label='Mean Values 3-D Positions')
+        plt.xlabel('Time')
+        ax1.set_ylabel('Mean Position', color='g')
+        mean = []
+        for row in prob_data.iterrows():
+            mean.append(np.mean(row[1].to_numpy()))
+        ax2.plot(mean, color='b', label='Mean Probability')
+        ax2.set_ylabel('P-Value (DLC)', color='b')
+        plt.vlines(behavior_starts, -0.2, 1, colors='r', label='Behavior Start')
+        plt.savefig(save_path + '/timeseries/timeseries_summary_behavior_starts.png', dpi=1400)
+        plt.close()
+        fig, ax1 = plt.subplots()
+        ax2 = ax1.twinx()
+        mean = []
+        for row in pred_data.iterrows():
+            mean.append(np.mean(row[1].to_numpy()))
+        ax1.plot(mean, color='g', label='Mean Values 3-D Positions')
+        plt.xlabel('Time')
+        ax1.set_ylabel('Mean Position', color='g')
+        mean = []
+        for row in prob_data.iterrows():
+            mean.append(np.mean(row[1].to_numpy()))
+        ax2.plot(mean, color='b', label='Mean Probability')
+        ax2.set_ylabel('P-Value (DLC)', color='b')
+        plt.savefig(save_path + '/timeseries/timeseries_summary.png', dpi=1400)
+        plt.close()
+
+
+    def get_column_names_kinematics(self, kinematics_data):
+        names_vx = []
+        names_vy = []
+        names_vz = []
+        names_ax = []
+        names_ay = []
+        names_az = []
+        names_s = []
+        for col_names in kinematics_data.columns:
+            if 'v' in col_names:
+                if 'Xv' in col_names:
+                    names_vx.append(col_names)
+                elif 'Yv' in col_names:
+                    names_vy.append(col_names)
+                elif 'Zv' in col_names:
+                    names_vz.append(col_names)
+            if 'a' in col_names:
+                if 'Xa' in col_names:
+                    names_ax.append(col_names)
+                elif 'Ya' in col_names:
+                    names_ay.append(col_names)
+                elif 'Za' in col_names:
+                    names_az.append(col_names)
+            if 'S' in col_names:
+                names_s.append(col_names)
+        return names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s
+
+
+    def kinematics_boxplot(self, save_path, kinematics_data):
+        """ Function to create standardized boxplots for keypoint variable kinematics (velocity, acceleration). """
+        names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = self.get_column_names_kinematics(kinematics_data)
         pdb.set_trace()
-    try:
-        ax = sns.heatmap(prob_data, cbar_kws={'label': 'Mean Certainty of DLC Predictions (p-value)'})
-        plt.hlines(trial_starts, *ax.get_xlim())
-        plt.savefig(save_path + '/colorplot/heatmap_probs_start_times.png', dpi=1400)
+        kinematics_data.boxplot(column=names_vx, showfliers=False)
+        plt.savefig(save_path + '/boxplots/velocity_x.png', dpi=1400)
         plt.close()
-        ax = sns.heatmap(prob_data)
-        plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
+        kinematics_data.boxplot(column=names_vy, showfliers=False)
+        plt.savefig(save_path + '/boxplots/velocity_y.png', dpi=1400)
         plt.close()
-    except:
+        kinematics_data.boxplot(column=names_vz, showfliers=False)
+        plt.savefig(save_path + '/boxplots/velocity_z.png', dpi=1400)
+        plt.close()
+        kinematics_data.boxplot(column=names_ax, showfliers=False)
+        plt.savefig(save_path + '/boxplots/acceleration_x.png', dpi=1400)
+        plt.close()
+        kinematics_data.boxplot(column=names_ay, showfliers=False)
+        plt.savefig(save_path+'/boxplots/acceleration_y.png', dpi=1400)
+        plt.close()
+        kinematics_data.boxplot(column=names_az, showfliers=False)
+        plt.savefig(save_path + '/boxplots/acceleration_z.png', dpi=1400)
+        plt.close()
+        kinematics_data.boxplot(column=names_s, showfliers=False)
+        plt.savefig(save_path + '/boxplots/speed.png')
+        plt.close()
+
+
+    def make_general_kinematic_timeseries_plots(self, save_path, kinematics_data):
+        """ Function to plot general aspects of the kinematic data in time-series format. """
+        names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = self.get_column_names_kinematics(kinematics_data)
         pdb.set_trace()
-
-def preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data, window_times=None):
-    """ Function to plot a given set of time-series data from 3-D predictions of keypoints,
-        their probability of location, and the rmse. Option to display windows of behavior vs non-behavior."""
-    behavior_starts = sensor_data['r_start'].to_numpy()[0]
-    plt.figure()
-    for name, col in pred_data.items():
-        plt.plot(col.to_numpy().T, label=name)
-    plt.vlines(behavior_starts, -0.2, 1, colors='r', label='Behavior Start')
-    plt.xlabel('Time')
-    plt.ylabel('Position (m)')
-    plt.ylim([-0.2, 1])
-    plt.savefig(save_path + '/timeseries/total_3D_timeseries_behavior_starts.png', dpi=1400)
-    plt.close()
-    plt.figure()
-    for name, col in pred_data.items():
-        plt.plot(col.to_numpy().T, label=name)
-    plt.xlabel('Time')
-    plt.ylabel('Position (m)')
-    plt.ylim([-0.2, 1])
-    plt.savefig(save_path + '/timeseries/total_3D_timeseries.png', dpi=1400)
-    plt.close()
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    mean = []
-    for row in pred_data.iterrows():
-        mean.append(np.mean(row[1].to_numpy()))
-    ax1.plot(mean, color='g', label='Mean Values 3-D Positions')
-    plt.xlabel('Time')
-    ax1.set_ylabel('Mean Position', color='g')
-    mean = []
-    for row in prob_data.iterrows():
-        mean.append(np.mean(row[1].to_numpy()))
-    ax2.plot(mean, color='b', label='Mean Probability')
-    ax2.set_ylabel('P-Value (DLC)', color='b')
-    plt.vlines(behavior_starts, -0.2, 1, colors='r', label='Behavior Start')
-    plt.savefig(save_path + '/timeseries/timeseries_summary_behavior_starts.png', dpi=1400)
-    plt.close()
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    mean = []
-    for row in pred_data.iterrows():
-        mean.append(np.mean(row[1].to_numpy()))
-    ax1.plot(mean, color='g', label='Mean Values 3-D Positions')
-    plt.xlabel('Time')
-    ax1.set_ylabel('Mean Position', color='g')
-    mean = []
-    for row in prob_data.iterrows():
-        mean.append(np.mean(row[1].to_numpy()))
-    ax2.plot(mean, color='b', label='Mean Probability')
-    ax2.set_ylabel('P-Value (DLC)', color='b')
-    plt.savefig(save_path + '/timeseries/timeseries_summary.png', dpi=1400)
-    plt.close()
+        kinematics_data.plot(column=names_vx)
+        plt.savefig(save_path + '/timeseries/velocity_x.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_vy)
+        plt.savefig(save_path + '/timeseries/velocity_y.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_vz)
+        plt.savefig(save_path + '/timeseries/velocity_z.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_ax)
+        plt.savefig(save_path + '/timeseries/acceleration_x.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_ay)
+        plt.savefig(save_path+'/timeseries/acceleration_y.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_az)
+        plt.savefig(save_path + '/timeseries/acceleration_z.png', dpi=1400)
+        plt.close()
+        kinematics_data.plot(column=names_s)
+        plt.savefig(save_path + '/timeseries/speed.png')
+        plt.close()
+    def make_lick_event(self, licking_times, window_length=1, num_events=10):
+        """ Function to filter out noise in licking sensor, given a window length in seconds and a input number
+            of events to threshold over.
+        """
+        if window_length == 1:
+            licking_times = np.rint(licking_times)  # round to second
+        key_val = np.unique(licking_times, return_index=True, return_counts=True)
+        unique_times = key_val[0]
+        num_set = key_val[2]
+        for i, k in enumerate(unique_times):
+            if num_set[i] < num_events:
+                ld = np.where(licking_times == k)[0]  # get index of values.
+                licking_times = np.delete(licking_times, ld)  # delete non-working indexes.
+        return licking_times
 
 
-def get_column_names_kinematics(kinematics_data):
-    names_vx = []
-    names_vy = []
-    names_vz = []
-    names_ax = []
-    names_ay = []
-    names_az = []
-    names_s = []
-    for col_names in kinematics_data.columns:
-        if 'v' in col_names:
-            if 'Xv' in col_names:
-                names_vx.append(col_names)
-            elif 'Yv' in col_names:
-                names_vy.append(col_names)
-            elif 'Zv' in col_names:
-                names_vz.append(col_names)
-        if 'a' in col_names:
-            if 'Xa' in col_names:
-                names_ax.append(col_names)
-            elif 'Ya' in col_names:
-                names_ay.append(col_names)
-            elif 'Za' in col_names:
-                names_az.append(col_names)
-        if 'S' in col_names:
-            names_s.append(col_names)
-    return names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s
+    def make_behavior_mask(self, start_times, stop_times, time):
+        behavior_mask = np.zeros(time.shape)
+        for i, s in enumerate(start_times):
+            stop = stop_times[i]
+            behavior_mask[s:stop] = 1
+        return behavior_mask
 
+    def make_classification_file(self, behavior_start):
+        header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time', 'Num Grasps',
+                  'Handedness', 'Tug of War', 'Notes']
+        trials = np.arange(0, len(behavior_start), 1)
+        reach_start_times = np.zeros(len(behavior_start))
+        trial_class = np.zeros(len(behavior_start))
+        number_reaches = np.zeros(len(behavior_start))
+        handedness = np.zeros(len(behavior_start))
+        tug_of_war = np.zeros(len(behavior_start))
+        num_grasps = np.zeros(len(behavior_start))
+        notes = np.zeros(len(behavior_start))
+        data = np.array(
+            [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, num_grasps, handedness,
+             tug_of_war, notes]).T
+        pdb.set_trace()
+        sim_df = pd.DataFrame(data, columns=header)
+        return sim_df
 
-def kinematics_boxplot(save_path, kinematics_data):
-    """ Function to create standardized boxplots for keypoint variable kinematics (velocity, acceleration). """
-    names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = get_column_names_kinematics(kinematics_data)
-    pdb.set_trace()
-    kinematics_data.boxplot(column=names_vx, showfliers=False)
-    plt.savefig(save_path + '/boxplots/velocity_x.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_vy, showfliers=False)
-    plt.savefig(save_path + '/boxplots/velocity_y.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_vz, showfliers=False)
-    plt.savefig(save_path + '/boxplots/velocity_z.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_ax, showfliers=False)
-    plt.savefig(save_path + '/boxplots/acceleration_x.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_ay, showfliers=False)
-    plt.savefig(save_path+'/boxplots/acceleration_y.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_az, showfliers=False)
-    plt.savefig(save_path + '/boxplots/acceleration_z.png', dpi=1400)
-    plt.close()
-    kinematics_data.boxplot(column=names_s, showfliers=False)
-    plt.savefig(save_path + '/boxplots/speed.png')
-    plt.close()
-
-
-def make_general_kinematic_timeseries_plots(save_path, kinematics_data):
-    """ Function to plot general aspects of the kinematic data in time-series format. """
-    names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = get_column_names_kinematics(kinematics_data)
-    pdb.set_trace()
-    kinematics_data.plot(column=names_vx)
-    plt.savefig(save_path + '/timeseries/velocity_x.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_vy)
-    plt.savefig(save_path + '/timeseries/velocity_y.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_vz)
-    plt.savefig(save_path + '/timeseries/velocity_z.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_ax)
-    plt.savefig(save_path + '/timeseries/acceleration_x.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_ay)
-    plt.savefig(save_path+'/timeseries/acceleration_y.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_az)
-    plt.savefig(save_path + '/timeseries/acceleration_z.png', dpi=1400)
-    plt.close()
-    kinematics_data.plot(column=names_s)
-    plt.savefig(save_path + '/timeseries/speed.png')
-    plt.close()
-
-
-def make_palm_timeseries_plots(save_path, kinematic_data):
-    """ Function to obtain heuristics for palm only. """
-
-
-
-def make_lick_event(licking_times, window_length=1, num_events=10):
-    """ Function to filter out noise in licking sensor, given a window length in seconds and a input number
-        of events to threshold over.
-    """
-    if window_length == 1:
-        licking_times = np.rint(licking_times)  # round to second
-    key_val = np.unique(licking_times, return_index=True, return_counts=True)
-    unique_times = key_val[0]
-    num_set = key_val[2]
-    for i, k in enumerate(unique_times):
-        if num_set[i] < num_events:
-            ld = np.where(licking_times == k)[0]  # get index of values.
-            licking_times = np.delete(licking_times, ld)  # delete non-working indexes.
-    return licking_times
-
-
-def make_behavior_mask(start_times, stop_times, time):
-    behavior_mask = np.zeros(time.shape)
-    for i, s in enumerate(start_times):
-        stop = stop_times[i]
-        behavior_mask[s:stop] = 1
-    return behavior_mask
-
-
-def visualize_data(root_dir, DLC_video_path, rat, date, session, pred_data, prob_data, rmse_data, sensor_data, kinematics):
-    """ Function, callable within ReachProcess, to visualize experimental data. Creates new directory structure to
-        hold obtained plots, saves them within this structure. For more information, please see the documentation. """
-    save_path = create_directory_for_session(root_dir, rat, date, session, win_dir=False)
-    try:
-        preprocessing_boxplot(save_path, rmse_data, prob_data)
-    except:
-        print('Could not create boxplots')
-    try:
-        preprocessing_colormaps(save_path, rmse_data, prob_data,sensor_data)
-    except:
-        print('Could not create colormaps')
-    try:
-        preprocessing_timeseries(save_path, pred_data, prob_data, sensor_data)
-    except:
-        print('Could not create timeseries plots')
-    behavior_start = sensor_data['r_start'][0] # Get start time
-    # Make 
-    sim_df = make_classification_file(behavior_start)
-    sim_df.to_csv(save_path + '/classification_videos/'+str(rat)+str(date)+str(session)+'_predictions.csv', index=False)
-    make_3d_scatter(pred_data, prob_data, save_path)
-    make_3_d_gif_from_plots(save_path, fps_val=10)
-    plot_kinematics_for_gif(save_path, sensor_data, kinematics, prob_data)
-    make_kin_gif_from_plots(save_path, fps_val=10)
-    make_combined_video_gif(DLC_video_path, save_path, fps_val=10)
-
-
-
-def make_classification_file(behavior_start):
-    header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time', 'Num Grasps',
-              'Handedness', 'Tug of War', 'Notes']
-    trials = np.arange(0, len(behavior_start), 1)
-    reach_start_times = np.zeros(len(behavior_start))
-    trial_class = np.zeros(len(behavior_start))
-    number_reaches = np.zeros(len(behavior_start))
-    handedness = np.zeros(len(behavior_start))
-    tug_of_war = np.zeros(len(behavior_start))
-    num_grasps = np.zeros(len(behavior_start))
-    notes = np.zeros(len(behavior_start))
-    data = np.array(
-        [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, num_grasps, handedness,
-         tug_of_war, notes]).T
-    sim_df = pd.DataFrame(data, columns=header)
-    return sim_df
-
-
-def make_3d_scatter(pred_data, prob_data, save_path):
-    for n in tqdm(range(0, pred_data.shape[0])):  # Iterate over entire block of data
+    def plot_3d(self, n):
+        pred_data = self.pred_data
+        prob_data = self.prob_data
+        save_path = self.save_path
         # Check if overlap in lag times for 3-D plot, lag = 5
         if n < 6:
             m = 0
@@ -380,8 +381,6 @@ def make_3d_scatter(pred_data, prob_data, save_path):
         plt.legend(['Handle', 'Right Forearm', 'Right Wrist', 'Right Palm', 'Left Wrist', 'Left Palm', 'Left Forearm'],
                    loc='upper right', fontsize='small')
         plt.margins(0.0005)
-        # plt.show()
-        # pdb.set_trace()
         # check to see if previous file exists
         filename = save_path + '/3d_plots/' + str(n) + '_scatter_trial.png'
         if os.path.exists(filename):
@@ -389,11 +388,20 @@ def make_3d_scatter(pred_data, prob_data, save_path):
         plt.savefig(filename, dpi=120)
         plt.close('all')
 
+    def make_3d_scatter(self):
+        iter_n = np.arange(0, self.pred_data.shape[0], 1)
+        self.pool.map_async(self.plot_3d, iter_n)
 
-def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabilities):
-    time = sensor_data['time'][0]
-    licking_data = sensor_data['lick'][0]
-    for n in tqdm(range(0, len(time))):
+    def make_kinematics_gif_mp(self):
+        iter_n = np.arange(0, self.pred_data.shape[0])
+        self.pool.map_async(self.plot_kinematics_for_gif, iter_n)
+
+    def plot_kinematics_for_gif(self, n):
+        kinematics_data = self.kinematics_data
+        probabilities = self.prob_data
+        time = self.sensor_data['time']
+        licking_data = self.sensor_data['licking']
+        save_path = self.save_path
         if n < 10:
             l = 0
         else:
@@ -432,80 +440,79 @@ def plot_kinematics_for_gif(save_path, sensor_data, kinematics_data, probabiliti
         plt.savefig(save_path + '/timeseries/' + str(n) + 'kinematics_summary.png', dpi=120)
         plt.close('all')
 
-
-def make_3_d_gif_from_plots(plot_path, fps_val=10):
-    search_path = plot_path + '/3d_plots/'
-    images = []
-    for file in glob.glob(search_path + '*_scatter_trial.png'):
-        images.append(imageio.imread(file))
-    imageio.mimsave(plot_path + '/classification_videos/total_3d_movie.mp4', images, fps=fps_val)
-    print('3-D GIF made. ')
-
-
-def make_kin_gif_from_plots(plot_path, fps_val=10):
-    search_path = plot_path + '\\timeseries\\'
-    images = []
-    for file in glob.glob(search_path + '*kinematics_summary.png'):
-        try:
+    def make_3_d_gif_from_plots(self, plot_path, fps_val=10):
+        search_path = plot_path + '/3d_plots/'
+        images = []
+        for file in glob.glob(search_path + '*_scatter_trial.png'):
             images.append(imageio.imread(file))
-        except:
-            pdb.set_trace()
-    imageio.mimsave(plot_path + '/classification_videos/sensor_movie.mp4', images, fps=fps_val)
-    print('Kinematic GIF made. ')
+        imageio.mimsave(plot_path + '/classification_videos/total_3d_movie.mp4', images, fps=fps_val)
+        print('3-D GIF made. ')
 
 
-def make_combined_video_gif(DLC_video_path, root_path, fps_val=10):
-    search_path = root_path + "/classification_videos/"
-    i = 0
-    for file in glob.glob(search_path + '*sensor_movie.mp4'):
-        kinematic_plot = cv2.VideoCapture(file)
-        kinematic_frames = []
-        while kinematic_plot.isOpened():
-            ret, frame = kinematic_plot.read()
-            kinematic_frames.append(frame)
-            i += 1
-        kinematic_plot.release()
+    def make_kin_gif_from_plots(self, plot_path, fps_val=10):
+        search_path = plot_path + '\\timeseries\\'
+        images = []
+        for file in glob.glob(search_path + '*kinematics_summary.png'):
+            try:
+                images.append(imageio.imread(file))
+            except:
+                pdb.set_trace()
+        imageio.mimsave(plot_path + '/classification_videos/sensor_movie.mp4', images, fps=fps_val)
+        print('Kinematic GIF made. ')
+
+
+    def make_combined_video_gif(self, DLC_video_path, root_path, fps_val=10):
+        search_path = root_path + "/classification_videos/"
         i = 0
-    for file in glob.glob(search_path + '*total_3d_movie.mp4'):
-        pred_movie = cv2.VideoCapture(file)
-        pred_frames = []
-        while pred_movie.isOpened():
-            ret, frame = pred_movie.read()
-            pred_frames.append(frame)
-            i += 1
-        pred_movie.release()
-        i = 0
-    # Temporary fix, must be able to cd into PNS for this path and get DLC prediction video.
-    for file in glob.glob(DLC_video_path):
-        if 'cam2' in file:
-            video = cv2.VideoCapture(file)
-            video_frames = []
-            while video.isOpened():
-                ret, frame = video.read()
-                video_frames.append(frame)
+        for file in glob.glob(search_path + '*sensor_movie.mp4'):
+            kinematic_plot = cv2.VideoCapture(file)
+            kinematic_frames = []
+            while kinematic_plot.isOpened():
+                ret, frame = kinematic_plot.read()
+                kinematic_frames.append(frame)
                 i += 1
-            video.release()
+            kinematic_plot.release()
             i = 0
-    gif_path = search_path + 'Classification_Video.avi'
-    frame_width = 688 + 480  # 1080p
-    frame_height = 720
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    new_gif = cv2.VideoWriter(gif_path, apiPreference=0, fourcc=fourcc,
-                              fps=fps_val, frameSize=(frame_width, frame_height))  # Create writer object
-    number_of_frames = min(len(video_frames), len(pred_frames), len(kinematic_frames))
-    ng = []
-    for frame_number in range(number_of_frames):
-        img1 = video_frames[frame_number]
-        img2 = pred_frames[frame_number]  # 480 x 640
-        img3 = kinematic_frames[frame_number]  # 480 x 640
-        # here is the magic
-        # reshape images to regions of interest, match indices to make a ~ 1080 x 720 px size video.
-        new_image = np.zeros((720, 688 + 480, 3)).astype(np.uint8)  # we want to reshape image into this size, keep video aspect ratio.
-        kinematic_image = np.zeros((720, 480, 3))  # this is the size of the kinematic plots.
-        kinematic_image[0:480, :, :] = img2  # fill with 3-D plots
-        kinematic_image[480:720, :, :] = img3
-        new_image[0:688, 0:688, :] = img1.astype(np.uint8)
-        new_image[:, 688:688 + 480, :] = kinematic_image.astype(np.uint8)
-        ng.append(new_image)
-        new_gif.write(new_image)
-    new_gif.release()
+        for file in glob.glob(search_path + '*total_3d_movie.mp4'):
+            pred_movie = cv2.VideoCapture(file)
+            pred_frames = []
+            while pred_movie.isOpened():
+                ret, frame = pred_movie.read()
+                pred_frames.append(frame)
+                i += 1
+            pred_movie.release()
+            i = 0
+        # Temporary fix, must be able to cd into PNS for this path and get DLC prediction video.
+        for file in glob.glob(DLC_video_path):
+            if 'cam2' in file:
+                video = cv2.VideoCapture(file)
+                video_frames = []
+                while video.isOpened():
+                    ret, frame = video.read()
+                    video_frames.append(frame)
+                    i += 1
+                video.release()
+                i = 0
+        gif_path = search_path + 'Classification_Video.avi'
+        frame_width = 688 + 480  # 1080p
+        frame_height = 720
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        new_gif = cv2.VideoWriter(gif_path, apiPreference=0, fourcc=fourcc,
+                                  fps=fps_val, frameSize=(frame_width, frame_height))  # Create writer object
+        number_of_frames = min(len(video_frames), len(pred_frames), len(kinematic_frames))
+        ng = []
+        for frame_number in range(number_of_frames):
+            img1 = video_frames[frame_number]
+            img2 = pred_frames[frame_number]  # 480 x 640
+            img3 = kinematic_frames[frame_number]  # 480 x 640
+            # here is the magic
+            # reshape images to regions of interest, match indices to make a ~ 1080 x 720 px size video.
+            new_image = np.zeros((720, 688 + 480, 3)).astype(np.uint8)  # we want to reshape image into this size, keep video aspect ratio.
+            kinematic_image = np.zeros((720, 480, 3))  # this is the size of the kinematic plots.
+            kinematic_image[0:480, :, :] = img2  # fill with 3-D plots
+            kinematic_image[480:720, :, :] = img3
+            new_image[0:688, 0:688, :] = img1.astype(np.uint8)
+            new_image[:, 688:688 + 480, :] = kinematic_image.astype(np.uint8)
+            ng.append(new_image)
+            new_gif.write(new_image)
+        new_gif.release()

@@ -8,12 +8,12 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from utils.process_utils.dlt_3d_reconstruction_utils import get_3d_coordinates
-from utils.experiment_utils.config_parser import import_config_data, get_config_data
-from utils.experiment_utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
-from utils.experiment_utils.trial_parser import match_times, get_successful_trials, trial_mask
-from utils.experiment_utils.experiment_data_parser import import_trodes_data
-from utils.process_utils import visualization_utils as vu
+from reachprocess.utils.process_utils.dlt_3d_reconstruction_utils import get_3d_coordinates
+from reachprocess.utils.experiment_utils.config_parser import import_config_data, get_config_data
+from reachprocess.utils.experiment_utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
+from reachprocess.utils.experiment_utils.trial_parser import match_times, get_successful_trials, trial_mask
+from reachprocess.utils.experiment_utils.experiment_data_parser import import_trodes_data
+from reachprocess.utils.process_utils import visualization_utils as vu
 
 def load_files(trodes_file_path, file_name, controller_path, config_dir, rat, session,
                cns_flag=False, force_rerun_of_data=True, sample_rate=30000, save=True):
@@ -185,7 +185,7 @@ def get_trial_metadata(file):
     return controller_path, config_path, trodes_path, exp_name, rat, session, date, video_path
 
 
-def get_3d_predictions(pns_path, dlt_path, rat_name, resnet_version = '101', shuffle=2, manual_extraction=True):
+def get_3d_predictions(pns_path, dlt_path, rat_name, resnet_version = '101', shuffle=2, manual_extraction=False):
     """Function to iterate over a data directory and extract 3-D positional data from CatScan or other data directory.
 
     Parameters
@@ -211,20 +211,17 @@ def get_3d_predictions(pns_path, dlt_path, rat_name, resnet_version = '101', shu
     predicted_data = []
     for file in tqdm(glob.glob(cns_pattern, recursive=True)):
         controller_path, config_path, trodes_path, file_name, rat, session, date, video_path = get_trial_metadata(file)
-        #get_video_filename
-        # '/clusterfs/NSDS_data/brnelson/PNS_data/RM14/09202019/S3/videos/**.mp4'
-        trodes_file_path = cns_path + str(date)+'/'+str(session)
-        sensor_dataframe = load_files(trodes_file_path, file_name, controller_path, config_path, rat, session, force_rerun_of_data=manual_extraction, 
+        t_file = file.rsplit('/',2)[0] # everything before 2 /'s
+        print(t_file)
+        sensor_dataframe = load_files(t_file, file_name, controller_path, config_path, rat, session, force_rerun_of_data=manual_extraction, 
                                              sample_rate=30000)
-        print(video_path + ' is being processed.')
-        #try:
+        print(video_path + ' is being processed.') 
         predictions, rmse_df, probabilities, kinematics = get_3d_coordinates(video_path, dlt_path, sensor_dataframe['time'], resnet_version, 
                                                                               shuffle_version = shuffle, manual_run=manual_extraction)
         total_prediction_dataframe = pd.concat([kinematics, probabilities, rmse_df, sensor_dataframe, predictions], axis=1)
         viz_dir = video_path[0:30]
         print('Creating pre-processing visualizations')
-        vu.visualize_data(viz_dir, video_path, rat, date, session, predictions, probabilities, rmse_df, sensor_dataframe, kinematics) 
-        pdb.set_trace()
+        #vu.visualize_data(viz_dir, video_path, rat, date, session, predictions, probabilities, rmse_df, sensor_dataframe, kinematics) 
         # hook here to add to a NWB file?
         total_iteration_dataframe = pd.concat([total_iteration_dataframe,total_prediction_dataframe],axis=0)
         predictions, rmse_df, probabilities, kinematics = None, None, None, None
