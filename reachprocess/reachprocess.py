@@ -7,9 +7,7 @@ import pandas as pd
 import utils.process_utils.video_split_batching as RP_V
 import utils.process_utils.data_extraction_utils as extract_predictions
 import pickle
-import multiprocessing as mp
 import deeplabcut
-#import kinematics.ReachLoader as ReachLoader
 import pdb
 import tensorflow as tf
 
@@ -18,11 +16,9 @@ class ReachProcess:
     """ Class to split experimental videos, use a pre-trained DLC network to predict positional keypoints, and compile
         the predicted kinematics into use-able 3-D predictions. """
 
-    # TODO - add count for # sessions being processed in split, check for rat,date,session
-    # TODO - check each step for previous process savefile
-    # TODO - delete from memory each step ie close process.
-    def __init__(self, input_data_path, rat, split=True, predict=True, transform=True, save_all=True, DLC_path='', DLT_path='', shuffle = 'shuffle2', resnet_version = '101',
-                                        gpu_num = '3'):
+    def __init__(self, input_data_path, rat, split=True, predict=True, transform=True, save_all=True, DLC_path='',
+                 DLT_path='', shuffle='shuffle2', resnet_version='101',
+                 gpu_num='3', sample_rate=30000, n_cores=40):
         """ ReachProcess! Initialize with a data path, set your desired output flags, and run!
             Parameters
             ----------
@@ -39,8 +35,10 @@ class ReachProcess:
         self.DLC_shuffle = shuffle
         self.DLC_network_version = resnet_version
         self.manual_extraction = True
-        self.gpu_num=gpu_num
-        self.individual_session_predictions, self.total_predictions, self.individual_rmse, self.total_rmse = [], [], [], []
+        self.gpu_num = gpu_num
+        self.num_cores = n_cores
+        self.sample_rate = sample_rate
+        self.session_predictions, self.total_predictions, self.session_rmse, self.total_rmse = [], [], [], []
         if split:
             # Find video files with no split videos currently.
             self.unsplit_video_path_list = RP_V.findFilesInFolder(input_data_path)
@@ -51,10 +49,10 @@ class ReachProcess:
             self.predict_with_deeplabcut()
         if transform:
             self.DLT_path = DLT_path
-            self.extract_predictions_3d() # Function to ETL data, returns NWB file containing experimental data
+            self.extract_predictions_3d()  # Function to ETL data, returns NWB file containing experimental data
         if save_all:
-                # check, load for previously saved NWB file
-                self.save_all_predictions() # saves NWB file containing data
+            # check, load for previously saved NWB file
+            self.save_all_predictions()  # saves NWB file containing data
 
     def split_videos(self):
         """ Function to iterate over un-split video files."""
@@ -64,10 +62,13 @@ class ReachProcess:
     def extract_predictions_3d(self):
         """ Function to iterate over DLC predictions, transform them using a given set of DLT co-effecients,
             and save into a dataframe. """
-        self.individual_session_predictions, self.individual_rmse = extract_predictions.get_3d_predictions(self.data_path, self.DLT_path, self.rat_path,
-                                                                                                               resnet_version=self.DLC_network_version, shuffle = self.DLC_shuffle, 
-                                                                                                             manual_extraction=self.manual_extraction)
-    def save_all_predictions(self, pik=False): # Update to NWB-ified functions.
+        self.session_predictions, self.session_rmse = \
+            extract_predictions.get_3d_predictions(self.data_path, self.DLT_path, self.rat_path,
+                                                   resnet_version=self.DLC_network_version, shuffle=self.DLC_shuffle,
+                                                   manual_extraction=self.manual_extraction, n_cores=self.num_cores,
+                                                   sample_rate=self.sample_rate)
+
+    def save_all_predictions(self, pik=False):  # Update to NWB-ified functions.
         print('Saving All Sessions into a DataFrame. ')
         os.chdir(self.data_path)
         save_path = self.data_path + '/total_dataframe.pkl'
@@ -81,16 +82,18 @@ class ReachProcess:
     def run_analysis_videos_deeplabcut(self, cam_video_paths, shuffle=2, train_index=9, filter=True, label_video=True):
         print("Starting to extract files..")
         # initialize deeplabcut
-        os.environ["CUDA_VISIBLE_DEVICES"]=self.gpu_num # hard-code for now.
+        os.environ["CUDA_VISIBLE_DEVICES"] = self.gpu_num  # hard-code for now.
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
         deeplabcut.analyze_videos(self.DLC_path, cam_video_paths, videotype='.mp4', shuffle=shuffle,
                                   trainingsetindex=train_index, save_as_csv=True)
         if filter:
-            deeplabcut.filterpredictions(self.DLC_path, cam_video_paths, videotype='.mp4',shuffle=shuffle, trainingsetindex=train_index, p_bound = 0.8,
-                                         filtertype='arima', ARdegree=2, MAdegree=2) # linear exponential smoothing
+            deeplabcut.filterpredictions(self.DLC_path, cam_video_paths, videotype='.mp4', shuffle=shuffle,
+                                         trainingsetindex=train_index, p_bound=0.8,
+                                         filtertype='arima', ARdegree=2, MAdegree=2)  # linear exponential smoothing
         if label_video:
-            deeplabcut.create_labeled_video(self.DLC_path, cam_video_paths, videotype='.mp4',trainingsetindex=train_index, shuffle=shuffle)
+            deeplabcut.create_labeled_video(self.DLC_path, cam_video_paths, videotype='.mp4',
+                                            trainingsetindex=train_index, shuffle=shuffle)
 
     def predict_with_deeplabcut(self):
         print('Starting Cam 1')

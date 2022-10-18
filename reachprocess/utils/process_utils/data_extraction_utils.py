@@ -10,10 +10,12 @@ import pandas as pd
 from tqdm import tqdm
 from reachprocess.utils.process_utils.dlt_3d_reconstruction_utils import get_3d_coordinates
 from reachprocess.utils.experiment_utils.config_parser import import_config_data, get_config_data
-from reachprocess.utils.experiment_utils.controller_data_parser import import_controller_data, get_reach_indices, get_reach_times
+from reachprocess.utils.experiment_utils.controller_data_parser import import_controller_data, get_reach_indices, \
+    get_reach_times
 from reachprocess.utils.experiment_utils.trial_parser import match_times, get_successful_trials, trial_mask
 from reachprocess.utils.experiment_utils.experiment_data_parser import import_trodes_data
 from reachprocess.utils.process_utils import visualization_utils as vu
+
 
 def load_files(trodes_file_path, file_name, controller_path, config_dir, rat, session,
                cns_flag=False, force_rerun_of_data=True, sample_rate=30000, save=True):
@@ -46,7 +48,8 @@ def load_files(trodes_file_path, file_name, controller_path, config_dir, rat, se
             experimental_data_found = 0
     dataframe = 0
     if experimental_data_found:
-        print('Found sensor data from trodes. If you wish to manually re-sample, please set the flag force_rerun to true. ' )
+        print(
+            'Found sensor data from trodes. If you wish to manually re-sample, please set the flag force_rerun to true. ')
         dataframe = pd.read_hdf(experimental_data_found)
     else:
         print('Generating sensor data manually!')
@@ -72,8 +75,8 @@ def load_files(trodes_file_path, file_name, controller_path, config_dir, rat, se
         reach_indices_stop = reach_indices['stop']
         trial_masks = trial_mask(true_time, reach_indices_start, reach_indices_stop, successful_trials)
         dataframe = to_df(file_name, config_data, true_time, successful_trials, trial_masks, rat, session,
-                              lick_data, controller_data, reach_indices,
-                              x_pot, y_pot, z_pot, reach_masks_start, reach_masks_stop)
+                          lick_data, controller_data, reach_indices,
+                          x_pot, y_pot, z_pot, reach_masks_start, reach_masks_stop)
         if save:
             exp_save_dir = trodes_file_path + '/experimental_df.h5'
             dataframe.to_hdf(exp_save_dir, key='df')
@@ -185,25 +188,30 @@ def get_trial_metadata(file):
     return controller_path, config_path, trodes_path, exp_name, rat, session, date, video_path
 
 
-def get_3d_predictions(pns_path, dlt_path, rat_name, resnet_version = '101', shuffle=2, manual_extraction=False):
+def get_3d_predictions(pns_path, dlt_path, resnet_version='101', shuffle=2, manual_extraction=False, n_cores=40,
+                       sample_rate=30000):
     """Function to iterate over a data directory and extract 3-D positional data from CatScan or other data directory.
 
     Parameters
     -----------
-    cns : str, path to cns directory
     dlt_path : str, path to DLT string
-    rat_name : str, name of rat ex: 'RM16', 'RM9', 'RF1'
+    n_cores : number of cores to use for visualization multiprocessing
+    shuffle: shuffle of network to use (DeepLabCut)
+    resnet_version : version of network to use in prediction
+    manual_extraction : boolean, true for manual extraction of data, false to attempt to load a previous version
+    pns_path : str, a directory path to where the pns data, such as video and metadata are kept
+    sample_rate : int, sample rate for trodes/spikegadgets data
 
     Returns
     ---------
-    df_list : list, contains dataframe(s) of 3-D positions over an entire experimental block session
+    total_iteration_dataframe : list, contains dataframe(s) of 3-D positions over an entire experimental block session
 
     """
     predictions, rmse_df, probabilities, kinematics = None, None, None, None
     sensor_dataframe = None
     total_prediction_dataframe = pd.DataFrame()
     total_iteration_dataframe = pd.DataFrame()
-    #cns_path = cns + rat_name
+    # cns_path = cns + rat_name
     cns_path = re.sub('PNS_data', 'cns', pns_path)
     cns_pattern = cns_path + '**/*.rec'
     cl = glob.glob(cns_pattern, recursive=True)
@@ -211,28 +219,27 @@ def get_3d_predictions(pns_path, dlt_path, rat_name, resnet_version = '101', shu
     predicted_data = []
     for file in tqdm(glob.glob(cns_pattern, recursive=True)):
         controller_path, config_path, trodes_path, file_name, rat, session, date, video_path = get_trial_metadata(file)
-        t_file = file.rsplit('/',2)[0] # everything before 2 /'s
+        t_file = file.rsplit('/', 2)[0]  # everything before 2 /'s
         print(t_file)
-        sensor_dataframe = load_files(t_file, file_name, controller_path, config_path, rat, session, force_rerun_of_data=manual_extraction, 
-                                             sample_rate=30000)
-        print(video_path + ' is being processed.') 
-        predictions, rmse_df, probabilities, kinematics = get_3d_coordinates(video_path, dlt_path, sensor_dataframe['time'], resnet_version, 
-                                                                              shuffle_version = shuffle, manual_run=manual_extraction)
-        total_prediction_dataframe = pd.concat([kinematics, probabilities, rmse_df, sensor_dataframe, predictions], axis=1)
+        sensor_dataframe = load_files(t_file, file_name, controller_path, config_path, rat, session,
+                                      force_rerun_of_data=manual_extraction,
+                                      sample_rate=sample_rate)
+        print(video_path + ' is being processed.')
+        predictions, rmse_df, probabilities, kinematics = get_3d_coordinates(video_path, dlt_path,
+                                                                             sensor_dataframe['time'], resnet_version,
+                                                                             shuffle_version=shuffle,
+                                                                             manual_run=manual_extraction)
+        total_prediction_dataframe = pd.concat([kinematics, probabilities, rmse_df, sensor_dataframe, predictions],
+                                               axis=1)
         viz_dir = video_path[0:30]
         print('Creating pre-processing visualizations')
-        #vu.visualize_data(viz_dir, video_path, rat, date, session, predictions, probabilities, rmse_df, sensor_dataframe, kinematics) 
+        vu.Viz(viz_dir, video_path, rat, date, session, predictions, probabilities, rmse_df, sensor_dataframe,
+               kinematics,
+               n_pools=n_cores)
         # hook here to add to a NWB file?
-        total_iteration_dataframe = pd.concat([total_iteration_dataframe,total_prediction_dataframe],axis=0)
+        total_iteration_dataframe = pd.concat([total_iteration_dataframe, total_prediction_dataframe], axis=0)
         predictions, rmse_df, probabilities, kinematics = None, None, None, None
         total_prediction_dataframe = pd.DataFrame()
-        sensor_dataframe=pd.DataFrame()
+        sensor_dataframe = pd.DataFrame()
         print('Finished this block, on to the next! ')
     return total_iteration_dataframe
-
-
-
-
-
-
-
