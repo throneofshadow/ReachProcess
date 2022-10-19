@@ -38,8 +38,8 @@ def load_raw_data_from_disk(disk_path):
 
 
 class Viz:
-    def __init__(self, root_dir, DLC_video_path, rat, date, session, pred_data, prob_data, rmse_data,
-                           sensor_data, kinematics, n_pools):
+    def __init__(self, root_dir, DLC_video_path, rat, date, session, pred_data, prob_data, rmse_data, sensor_data,
+                 kinematics, n_pools):
         """"
             Method to create visualizations for high-series data (3-D predictions, associated key-point probabilities,
             root mean square error of keypoints, and kinematics of 3-D keypoints). Each visualization is created in a
@@ -70,11 +70,12 @@ class Viz:
         save_address = self.save_path + '/classification_videos/' + str(rat) + str(date) + str(session) + '_predictions.csv'
         sim_df = self.make_classification_file(behavior_start)
         sim_df.to_csv(save_address, index=False)
-        self.make_3d_scatter(pred_data, prob_data, self.save_path)
+        self.make_3d_scatter()
         self.make_3_d_gif_from_plots(self.save_path, fps_val=10)
-        self.plot_kinematics_for_gif(self.save_path, sensor_data, kinematics, prob_data)
+        self.plot_kinematics_for_gif(self.save_path)
         self.make_kin_gif_from_plots(self.save_path, fps_val=10)
         self.make_combined_video_gif(DLC_video_path, self.save_path, fps_val=10)
+        self.pool.join()  # Close pool
 
     def create_directory_for_session(self, root_dir, rat, date, session, win_dir=False):
         """ Function to intake current video path, create new directories in a main directory to save newly created plots
@@ -286,7 +287,6 @@ class Viz:
                 licking_times = np.delete(licking_times, ld)  # delete non-working indexes.
         return licking_times
 
-
     def make_behavior_mask(self, start_times, stop_times, time):
         behavior_mask = np.zeros(time.shape)
         for i, s in enumerate(start_times):
@@ -324,19 +324,12 @@ class Viz:
         plt.tight_layout()
         plt.figure(figsize=(4, 4))
         ax = plt.axes(projection='3d')
-        # gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-        # ax = fig.add_subplot(gs[0], projection='3d')
-        # fig, (ax, ax1) = plt.subplots(2, 1, figsize=(12, 12), subplot_kw={'projection': "3d"},
-        #                              gridspec_kw={'height_ratios': [3, 1]})
         ax.set_zlabel('Z (m)')
         ax.set_ylabel('Y (m)')
         ax.set_xlabel('X (m)')
         ax.set_xlim([.1, .2])
         ax.set_ylim([0.15, 0.25])
         ax.set_zlim([0.14, 0.2])
-        # plt.subplots_adjust(top=0.95, bottom=0.9)
-        # ax.text()
-        # ax.text(5, 5, "Rat is currently: 404 Status not Found", fontsize="xx-large", va="top")
         for i in range(0, n - m):  # Loop through each value in alpha for plotting
             if i == m - n:  # set marker to star
                 marker_point = '*'
@@ -356,28 +349,23 @@ class Viz:
                     pred_data['Right Wrist Z'][m + i:m + i + 1],
                     color='dodgerblue', linestyle='None', marker=marker_point,
                     alpha=prob_data['Wrist 1 P'][m + i:m + i + 1].loc[m + i])
-            #  alpha=prob_data['Wrist 1 P'][m:n+10],
             ax.plot(pred_data['Right Palm X'][m:n + 10],
                     pred_data['Right Palm Y'][m:n + 10],
                     pred_data['Right Palm Z'][m:n + 10],
                     color='navy', linestyle='None', marker=marker_point, alpha=prob_data['Palm 1 P'].loc[m + i])
-            #  alpha=prob_data['Palm 1 P'][m:n+10],
             ax.plot(pred_data['Left Wrist X'][m + i:m + i + 1],
                     pred_data['Left Wrist Y'][m + i:m + i + 1],
                     pred_data['Left Wrist Z'][m + i:m + i + 1],
                     color='chartreuse', linestyle='None', marker=marker_point,
                     alpha=prob_data['Wrist 2 P'].loc[m + i])
-            #  alpha=prob_data['Wrist 2 P'][m:n+10],
             ax.plot(pred_data['Left Palm X'][m + i:m + i + 1],
                     pred_data['Left Palm Y'][m + i:m + i + 1],
                     pred_data['Left Palm Z'][m + i:m + i + 1],
                     color='g', linestyle='None', marker=marker_point, alpha=prob_data['Palm 2 P'].loc[m + i])
-            # alpha=prob_data['Palm 2 P'][m:n+10],
             ax.plot(pred_data['Left Forearm X'][m + i:m + i + 1],
                     pred_data['Left Forearm Y'][m + i:m + i + 1],
                     pred_data['Left Forearm Z'][m + i:m + i + 1], marker=marker_point,
                     color='limegreen', linestyle='None', alpha=prob_data['Forearm 2 P'][m + i:m + i + 1].loc[m + i])
-        # alpha = prob_data['Forearm 2 P'][m:n + 10],
         plt.legend(['Handle', 'Right Forearm', 'Right Wrist', 'Right Palm', 'Left Wrist', 'Left Palm', 'Left Forearm'],
                    loc='upper right', fontsize='small')
         plt.margins(0.0005)
@@ -448,7 +436,6 @@ class Viz:
         imageio.mimsave(plot_path + '/classification_videos/total_3d_movie.mp4', images, fps=fps_val)
         print('3-D GIF made. ')
 
-
     def make_kin_gif_from_plots(self, plot_path, fps_val=10):
         search_path = plot_path + '\\timeseries\\'
         images = []
@@ -460,25 +447,30 @@ class Viz:
         imageio.mimsave(plot_path + '/classification_videos/sensor_movie.mp4', images, fps=fps_val)
         print('Kinematic GIF made. ')
 
-
     def make_combined_video_gif(self, DLC_video_path, root_path, fps_val=10):
         search_path = root_path + "/classification_videos/"
         i = 0
         for file in glob.glob(search_path + '*sensor_movie.mp4'):
             kinematic_plot = cv2.VideoCapture(file)
-            kinematic_frames = []
+            frame_count = kinematic_plot.get(cv2.CAP_PROP_FRAME_COUNT)
+            height = kinematic_plot.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            width = kinematic_plot.get(cv2.CAP_PROP_FRAME_WIDTH)
+            kinematic_frames = np.zeros((frame_count, width, height))
             while kinematic_plot.isOpened():
                 ret, frame = kinematic_plot.read()
-                kinematic_frames.append(frame)
+                kinematic_frames[i, :, :] = frame
                 i += 1
             kinematic_plot.release()
             i = 0
         for file in glob.glob(search_path + '*total_3d_movie.mp4'):
             pred_movie = cv2.VideoCapture(file)
-            pred_frames = []
+            frame_count = pred_movie.get(cv2.CAP_PROP_FRAME_COUNT)
+            height = pred_movie.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            width = pred_movie.get(cv2.CAP_PROP_FRAME_WIDTH)
+            pred_frames = np.zeros((frame_count, width, height))
             while pred_movie.isOpened():
                 ret, frame = pred_movie.read()
-                pred_frames.append(frame)
+                pred_frames[i, :, :] = frame
                 i += 1
             pred_movie.release()
             i = 0
@@ -486,10 +478,14 @@ class Viz:
         for file in glob.glob(DLC_video_path):
             if 'cam2' in file:
                 video = cv2.VideoCapture(file)
-                video_frames = []
+                frame_count = video.get(cv2.CAP_PROP_FRAME_COUNT)
+                height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+                video_frames = np.zeros((frame_count, width, height))
+                i = 0
                 while video.isOpened():
                     ret, frame = video.read()
-                    video_frames.append(frame)
+                    video_frames[i, :, :] = frame
                     i += 1
                 video.release()
                 i = 0
@@ -500,11 +496,10 @@ class Viz:
         new_gif = cv2.VideoWriter(gif_path, apiPreference=0, fourcc=fourcc,
                                   fps=fps_val, frameSize=(frame_width, frame_height))  # Create writer object
         number_of_frames = min(len(video_frames), len(pred_frames), len(kinematic_frames))
-        ng = []
         for frame_number in range(number_of_frames):
-            img1 = video_frames[frame_number]
-            img2 = pred_frames[frame_number]  # 480 x 640
-            img3 = kinematic_frames[frame_number]  # 480 x 640
+            img1 = np.squeeze(video_frames[frame_number, :, :])
+            img2 = np.squeeze(pred_frames[frame_number, :, :]) # 480 x 640
+            img3 = np.squeeze(kinematic_frames[frame_number, :, :])  # 480 x 640
             # here is the magic
             # reshape images to regions of interest, match indices to make a ~ 1080 x 720 px size video.
             new_image = np.zeros((720, 688 + 480, 3)).astype(np.uint8)  # we want to reshape image into this size, keep video aspect ratio.
@@ -513,6 +508,5 @@ class Viz:
             kinematic_image[480:720, :, :] = img3
             new_image[0:688, 0:688, :] = img1.astype(np.uint8)
             new_image[:, 688:688 + 480, :] = kinematic_image.astype(np.uint8)
-            ng.append(new_image)
             new_gif.write(new_image)
         new_gif.release()
