@@ -91,7 +91,6 @@ class Viz:
         else:
             process_path = root_dir + "/ReachProcess/" + rat + '/' + date + '/' + session
             mkdir_p(process_path)
-            #mkdir_p(process_path+
             mkdir_p(process_path + "/boxplot")
             mkdir_p(process_path + "/colorplot")
             mkdir_p(process_path + "/3d_plots")
@@ -122,7 +121,7 @@ class Viz:
             plt.hlines(trial_starts, *ax.get_xlim())
             plt.savefig(save_path + '/colorplot/heatmap_rmse_start_times.png', dpi=1400)
             plt.close()
-            ax = sns.heatmap(rmse_dataframe)
+            sns.heatmap(rmse_dataframe)
             plt.savefig(save_path + '/colorplot/heatmap_rmse.png', dpi=1400)
             plt.close()
         except:
@@ -132,7 +131,7 @@ class Viz:
             plt.hlines(trial_starts, *ax.get_xlim())
             plt.savefig(save_path + '/colorplot/heatmap_probs_start_times.png', dpi=1400)
             plt.close()
-            ax = sns.heatmap(prob_data)
+            sns.heatmap(prob_data)
             plt.savefig(save_path + '/colorplot/heatmap_probs.png', dpi=1400)
             plt.close()
         except:
@@ -219,7 +218,6 @@ class Viz:
                 names_s.append(col_names)
         return names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s
 
-
     def kinematics_boxplot(self, save_path, kinematics_data):
         """ Function to create standardized boxplots for keypoint variable kinematics (velocity, acceleration). """
         names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = self.get_column_names_kinematics(kinematics_data)
@@ -246,7 +244,6 @@ class Viz:
         plt.savefig(save_path + '/boxplots/speed.png')
         plt.close()
 
-
     def make_general_kinematic_timeseries_plots(self, save_path, kinematics_data):
         """ Function to plot general aspects of the kinematic data in time-series format. """
         names_vx, names_vy, names_vz, names_ax, names_ay, names_az, names_s = self.get_column_names_kinematics(kinematics_data)
@@ -272,6 +269,7 @@ class Viz:
         kinematics_data.plot(column=names_s)
         plt.savefig(save_path + '/timeseries/speed.png')
         plt.close()
+
     def make_lick_event(self, licking_times, window_length=1, num_events=10):
         """ Function to filter out noise in licking sensor, given a window length in seconds and a input number
             of events to threshold over.
@@ -294,21 +292,14 @@ class Viz:
             behavior_mask[s:stop] = 1
         return behavior_mask
 
-    def make_classification_file(self, behavior_start):
-        header = ['Trial', 'Start Time', 'Trial?', 'Number Reaches', 'Reach Start Time', 'Reach Stop Time', 'Num Grasps',
-                  'Handedness', 'Tug of War', 'Notes']
-        trials = np.arange(0, len(behavior_start), 1)
-        reach_start_times = np.zeros(len(behavior_start))
-        trial_class = np.zeros(len(behavior_start))
-        number_reaches = np.zeros(len(behavior_start))
-        handedness = np.zeros(len(behavior_start))
-        tug_of_war = np.zeros(len(behavior_start))
-        num_grasps = np.zeros(len(behavior_start))
-        notes = np.zeros(len(behavior_start))
+    def make_classification_file(self):
+        header = ['Trial', 'Reach Start Time', 'Reach Stop Time', 'Grasp Times', 'Handedness', 'Tug of War', 'Notes']
+        behavior_start = 250  # Set as max possible num_reaches
+        trials = np.arange(0, behavior_start, 1)
+        reach_start_times = np.zeros(behavior_start)
         data = np.array(
-            [trials, behavior_start, trial_class, number_reaches, reach_start_times, reach_start_times, num_grasps, handedness,
-             tug_of_war, notes]).T
-        pdb.set_trace()
+            [trials, reach_start_times, reach_start_times, reach_start_times, reach_start_times, reach_start_times,
+             reach_start_times]).T
         sim_df = pd.DataFrame(data, columns=header)
         return sim_df
 
