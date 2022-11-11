@@ -2,13 +2,6 @@
 from reachprocess import ReachProcess as r
 import pdb
 
-
-def main(path_to_search):
-    print("Beginning Video Split. ")
-    pathList = [ ]
-    pathList = RP_V.findFilesInFolder(path_to_search)
-    RP_V.mainrun_split(pathList)
-
 path = "/clusterfs/NSDS_data/brnelson/PNS_data/RM14/**/*.mp4"
 DLT_path = "/clusterfs/NSDS_data/brnelson/DLT_files/test_dlt.csv"
 path_to_DLC = "/clusterfs/NSDS_data/brnelson/DLC/LabLabel-Lab-2020-10-27/config.yaml"

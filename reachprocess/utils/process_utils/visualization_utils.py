@@ -64,11 +64,10 @@ class Viz:
             self.preprocessing_timeseries(self.save_path, pred_data, prob_data, sensor_data)
         except:
             print('Could not create timeseries plots')
-        behavior_start = sensor_data['r_start'][0]  # Get sensor start times (defined by standard deviation of pixels)
         # Make the classification file (for annotation purposes)
         # Check to see if classification file exists (if exists, don't make)
         save_address = self.save_path + '/classification_videos/' + str(rat) + str(date) + str(session) + '_predictions.csv'
-        sim_df = self.make_classification_file(behavior_start)
+        sim_df = self.make_classification_file()
         sim_df.to_csv(save_address, index=False)
         self.make_3d_scatter()
         self.make_3_d_gif_from_plots(self.save_path, fps_val=10)

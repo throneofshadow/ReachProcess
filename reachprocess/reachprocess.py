@@ -17,7 +17,7 @@ class ReachProcess:
         the predicted kinematics into use-able 3-D predictions. """
 
     def __init__(self, input_data_path, rat, split=True, predict=True, transform=True, save_all=True, DLC_path='',
-                 DLT_path='', shuffle='shuffle2', resnet_version='101',
+                 DLT_path='', shuffle='shuffle2', resnet_version='101',manual_extraction=True,
                  gpu_num='3', sample_rate=30000, n_cores=40):
         """ ReachProcess! Initialize with a data path, set your desired output flags, and run!
             Parameters
@@ -34,7 +34,7 @@ class ReachProcess:
         self.data_path = input_data_path[0:-8]
         self.DLC_shuffle = shuffle
         self.DLC_network_version = resnet_version
-        self.manual_extraction = True
+        self.manual_extraction = manual_extraction
         self.gpu_num = gpu_num
         self.num_cores = n_cores
         self.sample_rate = sample_rate
@@ -63,7 +63,7 @@ class ReachProcess:
         """ Function to iterate over DLC predictions, transform them using a given set of DLT co-effecients,
             and save into a dataframe. """
         self.session_predictions, self.session_rmse = \
-            extract_predictions.get_3d_predictions(self.data_path, self.DLT_path, self.rat_path,
+            extract_predictions.get_3d_predictions(self.data_path, self.DLT_path,
                                                    resnet_version=self.DLC_network_version, shuffle=self.DLC_shuffle,
                                                    manual_extraction=self.manual_extraction, n_cores=self.num_cores,
                                                    sample_rate=self.sample_rate)
